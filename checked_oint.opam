@@ -2,11 +2,11 @@
 opam-version: "2.0"
 version: "0.2.0"
 synopsis: "An OCaml library for checked integer arithmetic"
-maintainer: ["Tima Kinsart <hirrolot@gmail.com>"]
-authors: ["Tima Kinsart <hirrolot@gmail.com>"]
+maintainer: ["hirrolot <hirrolot@gmail.com>"]
+authors: ["hirrolot <hirrolot@gmail.com>"]
 license: "MIT"
-homepage: "https://github.com/Hirrolot/checked_oint"
-bug-reports: "https://github.com/Hirrolot/checked_oint/issues"
+homepage: "https://github.com/hirrolot/checked_oint"
+bug-reports: "https://github.com/hirrolot/checked_oint/issues"
 depends: [
   "ocaml" {>= "4.13"}
   "dune" {>= "3.14"}
@@ -32,4 +32,4 @@ build: [
     "@doc" {with-doc}
   ]
 ]
-dev-repo: "git+https://github.com/Hirrolot/checked_oint.git"
+dev-repo: "git+https://github.com/hirrolot/checked_oint.git"

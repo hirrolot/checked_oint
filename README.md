@@ -30,4 +30,4 @@ You can find the API documentation [here](https://hirrolot.github.io/checked_oin
  1. Release the project in [GitHub Releases].
  1. Type `git pull && opam publish`.
 
-[GitHub Releases]: https://github.com/Hirrolot/checked_oint/releases
+[GitHub Releases]: https://github.com/hirrolot/checked_oint/releases

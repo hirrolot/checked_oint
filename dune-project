@@ -7,11 +7,11 @@
 (generate_opam_files true)
 
 (source
- (github Hirrolot/checked_oint))
+ (github hirrolot/checked_oint))
 
-(authors "Tima Kinsart <hirrolot@gmail.com>")
+(authors "hirrolot <hirrolot@gmail.com>")
 
-(maintainers "Tima Kinsart <hirrolot@gmail.com>")
+(maintainers "hirrolot <hirrolot@gmail.com>")
 
 (license MIT)
 
