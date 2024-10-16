@@ -139,7 +139,6 @@ X(int, int, strtoimax, intmax_t, INT_MIN, INT_MAX)
         return print_##signedness##128(unwrap(x), buffer);                     \
     }                                                                          \
                                                                                \
-    /* TODO: support the `base` argument. */                                   \
     int checked_oint_scan_##signedness##128(                                   \
         const char s[const restrict],                                          \
         struct signedness##128 *const restrict x, const int base) {            \
@@ -147,16 +146,8 @@ X(int, int, strtoimax, intmax_t, INT_MIN, INT_MAX)
         assert(x);                                                             \
         assert(2 == base || 8 == base || 10 == base || 16 == base);            \
                                                                                \
-        _Pragma("GCC diagnostic push");                                        \
-        _Pragma("GCC diagnostic ignored \"-Wunused-value\"");                  \
-        assert(                                                                \
-            ("Binary, octal, and hexadecimal 128-bit numbers are not "         \
-             "currently supported",                                            \
-             10 == base));                                                     \
-        _Pragma("GCC diagnostic pop");                                         \
-                                                                               \
         gcc_ty result = 0;                                                     \
-        if (0 == scan_##signedness##128(s, &result)) {                         \
+        if (0 == scan_##signedness##128(s, &result, base)) {                   \
             *x = wrap(result);                                                 \
             return 0;                                                          \
         }                                                                      \
