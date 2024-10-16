@@ -256,12 +256,9 @@ let show_and_parse_ints () =
          if S.is_signed then check "Check -42" (S.of_int_exn (-42), "-42");
          check "Check the minimum integer" (S.min_int, min_int_s);
          check "Check the maximum integer" (S.max_int, max_int_s);
-         (* TODO: test also 128-bit numbers when they are supported. *)
-         if S.bits != 128
-         then (
-           check_format "Check binary" (42, "0b101010");
-           check_format "Check octal" (42, "0o52");
-           check_format "Check hexadecimal" (42, "0x2a")))
+         check_format "Check binary" (42, "0b101010");
+         check_format "Check octal" (42, "0o52");
+         check_format "Check hexadecimal" (42, "0x2a"))
       limits
       int_modules_list
 ;;

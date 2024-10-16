@@ -3,7 +3,7 @@
 //
 // [1]: https://gcc.gnu.org/onlinedocs/gcc/_005f_005fint128.html
 
-#include <assert.h>
+#include <ctype.h>
 #include <stddef.h>
 
 #define U128_MIN ((unsigned __int128)0)
@@ -18,21 +18,13 @@
 // `-170141183460469231731687303715884105728`, plus the null character.
 #define MAX_INT_PRINT_SIZE (40 + /* the null character */ 1)
 
-static const char digits[] = "0123456789";
-
 static int map_digit(const char c) {
-    switch (c) {
-    case '0': return 0;
-    case '1': return 1;
-    case '2': return 2;
-    case '3': return 3;
-    case '4': return 4;
-    case '5': return 5;
-    case '6': return 6;
-    case '7': return 7;
-    case '8': return 8;
-    case '9': return 9;
-    default: return -1;
+    if (isdigit(c)) {
+        return c - '0';
+    } else if (isalpha(c)) {
+        return toupper(c) - 'A' + 10;
+    } else {
+        return -1;
     }
 }
 
@@ -44,7 +36,7 @@ static int print_u128_aux(
         i = print_u128_aux(n / 10, buffer);
     }
 
-    buffer[i] = digits[n % 10];
+    buffer[i] = "0123456789"[n % 10];
     i++;
 
     return i;
@@ -84,18 +76,16 @@ print_i128(__int128 n, char buffer[const restrict static MAX_INT_PRINT_SIZE]) {
         return -1;                                                             \
     }
 
-static int
-scan_u128(const char s[const restrict], unsigned __int128 *const restrict x) {
-    assert(s);
-    assert(x);
-
+static int scan_u128(
+    const char s[const restrict], unsigned __int128 *const restrict x,
+    const int base) {
     FAIL_IF('\0' == s[0]);
 
     unsigned __int128 result = 0;
     for (size_t i = 0; s[i] != '\0'; i++) {
         // Overflow.
-        FAIL_IF(result > U128_MAX / 10);
-        result *= 10;
+        FAIL_IF(result > U128_MAX / base);
+        result *= base;
 
         const int digit = map_digit(s[i]);
         // An invalid character.
@@ -111,10 +101,8 @@ scan_u128(const char s[const restrict], unsigned __int128 *const restrict x) {
     return 0;
 }
 
-static int scan_i128(const char s[const restrict], __int128 *const restrict x) {
-    assert(s);
-    assert(x);
-
+static int scan_i128(
+    const char s[const restrict], __int128 *const restrict x, const int base) {
     FAIL_IF('\0' == s[0]);
 
     int offset = 0;
@@ -125,7 +113,7 @@ static int scan_i128(const char s[const restrict], __int128 *const restrict x) {
     }
 
     unsigned __int128 result = 0;
-    FAIL_IF(-1 == scan_u128(s + offset, &result));
+    FAIL_IF(-1 == scan_u128(s + offset, &result, base));
 
     // Overflow.
     FAIL_IF(1 == sign && result > (unsigned __int128)I128_MAX);

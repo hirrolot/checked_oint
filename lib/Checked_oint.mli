@@ -129,8 +129,6 @@ module type S = sig
       - Hexadecimal: [0x] ([0X]) followed by a non-empty sequence of decimal digits [0],
         ..., [9] and letters [a], ..., [f] ([A], ..., [F]).
 
-      (Currently, 128-bit integers can only be decimal.)
-
       A negative integer is described by the [-] character followed by a well-formed
       non-negative integer.
 
