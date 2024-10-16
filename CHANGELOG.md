@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## unreleased
 
+## 0.2.1 - 2024-10-16
+
 ### Fixed
 
  - Support binary, octal, and hexadecimal `of_string` formats for 128-bit integers.
