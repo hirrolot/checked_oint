@@ -273,10 +273,12 @@ let parse_errors () =
              Alcotest.check_raises msg Out_of_range (fun () -> ignore (S.of_string_exn s))
          in
          check_raises "The empty string" "";
+         check_raises "The empty string with minus" "-";
          [ " "; "\x0c" (* form feed *); "\n"; "\r"; "\t"; "\x0b" (* vertical tab *) ]
          |> List.iter (fun padding ->
            check_raises "A left-padded integer" (padding ^ "42");
-           check_raises "A right-padded integer" ("42" ^ padding));
+           check_raises "A right-padded integer" ("42" ^ padding);
+           check_raises "Space in the middle" ("4" ^ padding ^ "2"));
          check_raises "An invalid character (before)" "~42";
          check_raises "An invalid character (in-between)" "4~2";
          check_raises "An invalid character (after)" "42~";
