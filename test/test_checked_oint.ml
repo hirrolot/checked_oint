@@ -280,6 +280,7 @@ let parse_errors () =
          check_raises "An invalid character (before)" "~42";
          check_raises "An invalid character (in-between)" "4~2";
          check_raises "An invalid character (after)" "42~";
+         check_raises "An out-of-range letter" "42j";
          check_raises "An overflow (too many digits)" (max_int_s ^ "0");
          check_raises "An overflow (too large)" (cause_overflow max_int_s);
          if S.is_signed then check_raises "An underflow" (cause_overflow min_int_s))

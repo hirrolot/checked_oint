@@ -90,7 +90,8 @@ static int scan_u128(
         const int digit = map_digit(s[i]);
         // An invalid character.
         FAIL_IF(-1 == digit);
-
+        // An out-of-range letter.
+        FAIL_IF(digit >= base);
         // Overflow.
         FAIL_IF(result > U128_MAX - (unsigned __int128)digit);
 
@@ -117,7 +118,6 @@ static int scan_i128(
 
     // Overflow.
     FAIL_IF(1 == sign && result > (unsigned __int128)I128_MAX);
-
     // Underflow.
     FAIL_IF(-1 == sign && result > (unsigned __int128)I128_MAX + 1);
 

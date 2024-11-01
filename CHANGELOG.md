@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## unreleased
 
+### Fixed
+
+ - Detect out-of-range letters during 128-bit integer parsing.
+
 ## 0.2.1 - 2024-10-16
 
 ### Fixed
