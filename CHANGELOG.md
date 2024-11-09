@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## unreleased
 
+### Added
+
+ - Integer type shortcuts:
+   - `u8_int_ty`, `u16_int_ty`, `u32_int_ty`, `u64_int_ty`, `u128_int_ty`
+   - `i8_int_ty`, `i16_int_ty`, `i32_int_ty`, `i64_int_ty`, `i128_int_ty`
+
 ## 0.2.2 - 2024-11-01
 
 ### Fixed
