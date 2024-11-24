@@ -952,13 +952,14 @@ module type Pair = sig
   val value : t * t
 end
 
-let pair_exn =
+let pair =
     let make (type a) (module S : S with type t = a) (x, y) =
         (module struct
           include S
 
           let value = x, y
         end : Pair)
+        |> Option.some
     in
     function
     | U8 x, U8 y -> make (module U8) (x, y)
@@ -972,7 +973,13 @@ let pair_exn =
     | I64 x, I64 y -> make (module I64) (x, y)
     | I128 x, I128 y -> make (module I128) (x, y)
     | (U8 _ | U16 _ | U32 _ | U64 _ | U128 _ | I8 _ | I16 _ | I32 _ | I64 _ | I128 _), _
-      -> invalid_arg "Checked_oint.pair_exn"
+      -> None
+;;
+
+let pair_exn (x, y) =
+    match pair (x, y) with
+    | Some pair -> pair
+    | None -> invalid_arg "Checked_oint.pair_exn"
 ;;
 
 [@@@coverage on]

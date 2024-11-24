@@ -321,7 +321,7 @@ val singleton : generic -> (module Singleton)
 
     This module is useful for typed manipulation of an arbitrary pair of integers,
     provided that they belong to the same type. A first-class instance of this module can
-    be obtained by calling {!pair_exn} with a pair of {!generic} integers. *)
+    be obtained by calling {!pair}/{!pair_exn} with a pair of {!generic}s. *)
 module type Pair = sig
   type t
 
@@ -330,6 +330,9 @@ module type Pair = sig
   val value : t * t
 end
 
-(** Constructs a pair of integers; raises [Invalid_argument] if a provided pair of generic
-    integers are not of the same tag. *)
+(** Constructs a pair of integers; returns [None] if a provided pair of generic integers
+    are not of the same tag. *)
+val pair : generic * generic -> (module Pair) option
+
+(** Same as {!pair} but raises [Invalid_argument] instead of returning [None]. *)
 val pair_exn : generic * generic -> (module Pair)
