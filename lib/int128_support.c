@@ -1,7 +1,7 @@
 // GCC's support for 128-bit integers [1] is quite castrated. This file defines
 // some more constants and operations.
 //
-// [1]: https://gcc.gnu.org/onlinedocs/gcc/_005f_005fint128.html
+// [1] <https://gcc.gnu.org/onlinedocs/gcc/_005f_005fint128.html>
 
 #include <ctype.h>
 #include <stddef.h>
@@ -42,7 +42,7 @@ static int print_u128_aux(
     return i;
 }
 
-static int print_u128(
+static int impl_u128_print(
     unsigned __int128 n,
     char buffer[const restrict static MAX_INT_PRINT_SIZE]) {
     const int i = print_u128_aux(n, buffer);
@@ -50,8 +50,8 @@ static int print_u128(
     return i;
 }
 
-static int
-print_i128(__int128 n, char buffer[const restrict static MAX_INT_PRINT_SIZE]) {
+static int impl_i128_print(
+    __int128 n, char buffer[const restrict static MAX_INT_PRINT_SIZE]) {
     int offset = 0;
     if (n < 0) {
         buffer[0] = '-';
@@ -68,7 +68,7 @@ print_i128(__int128 n, char buffer[const restrict static MAX_INT_PRINT_SIZE]) {
         unsigned_n = (unsigned __int128)n;
     }
 
-    return offset + print_u128(unsigned_n, buffer + offset);
+    return offset + impl_u128_print(unsigned_n, buffer + offset);
 }
 
 #define FAIL_IF(cond)                                                          \
@@ -76,7 +76,7 @@ print_i128(__int128 n, char buffer[const restrict static MAX_INT_PRINT_SIZE]) {
         return -1;                                                             \
     }
 
-static int scan_u128(
+static int impl_u128_scan_exn(
     const char s[const restrict], unsigned __int128 *const restrict x,
     const int base) {
     FAIL_IF('\0' == s[0]);
@@ -102,7 +102,7 @@ static int scan_u128(
     return 0;
 }
 
-static int scan_i128(
+static int impl_i128_scan_exn(
     const char s[const restrict], __int128 *const restrict x, const int base) {
     FAIL_IF('\0' == s[0]);
 
@@ -114,7 +114,7 @@ static int scan_i128(
     }
 
     unsigned __int128 result = 0;
-    FAIL_IF(-1 == scan_u128(s + offset, &result, base));
+    FAIL_IF(-1 == impl_u128_scan_exn(s + offset, &result, base));
 
     // Overflow.
     FAIL_IF(1 == sign && result > (unsigned __int128)I128_MAX);

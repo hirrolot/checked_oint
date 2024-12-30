@@ -10,8 +10,6 @@ bug-reports: "https://github.com/hirrolot/checked_oint/issues"
 depends: [
   "ocaml" {>= "4.13"}
   "dune" {>= "3.14"}
-  "ctypes"
-  "ctypes-foreign" {>= "0.21.1"}
   "ppx_deriving"
   "ppx_enumerate"
   "bisect_ppx"

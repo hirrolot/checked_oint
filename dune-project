@@ -22,9 +22,6 @@
   (ocaml
    (>= 4.13))
   dune
-  ctypes
-  (ctypes-foreign
-   (>= 0.21.1))
   ppx_deriving
   ppx_enumerate
   bisect_ppx

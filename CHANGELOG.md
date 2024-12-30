@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## unreleased
 
+### Changed
+
+ - Use [manual interfacing with C] instead of [`ocaml-ctypes`].
+   - This fixes compilation on Fedora Linux, openSUSE, FreeBSD, and Oracle Linux (issue https://github.com/hirrolot/checked_oint/issues/1).
+
+[manual interfacing with C]: https://ocaml.org/manual/latest/intfc.html
+[`ocaml-ctypes`]: https://github.com/yallop/ocaml-ctypes
+
 ## 0.4.0 - 2024-11-24
 
 ### Added

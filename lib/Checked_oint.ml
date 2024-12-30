@@ -1,138 +1,68 @@
-open Ctypes
+module C = struct
+  type u128 =
+    { u128_high : int64
+    ; u128_low : int64
+    }
 
-(* This is a workaround to force dynamic linking, see
-   <https://github.com/ocaml/dune/issues/10461#issuecomment-2082149852>. *)
-external _force_link : unit -> unit = "checked_oint_force_link"
+  type i128 =
+    { i128_high : int64
+    ; i128_low : int64
+    }
+
+  external i8_bit_not : int -> int = "checked_oint_i8_bit_not" [@@noalloc]
+  external i16_bit_not : int -> int = "checked_oint_i16_bit_not" [@@noalloc]
+  external i8_shift_left : int -> int -> int = "checked_oint_i8_shift_left" [@@noalloc]
+  external i8_shift_right : int -> int -> int = "checked_oint_i8_shift_right" [@@noalloc]
+  external i16_shift_left : int -> int -> int = "checked_oint_i16_shift_left" [@@noalloc]
+
+  external i16_shift_right : int -> int -> int = "checked_oint_i16_shift_right"
+  [@@noalloc]
+
+  external int_scan_exn : string -> int -> int = "checked_oint_int_scan_exn"
+  external u32_scan_exn : string -> int -> int32 = "checked_oint_u32_scan_exn"
+  external u64_scan_exn : string -> int -> int64 = "checked_oint_u64_scan_exn"
+  external i32_scan_exn : string -> int -> int32 = "checked_oint_i32_scan_exn"
+  external i64_scan_exn : string -> int -> int64 = "checked_oint_i64_scan_exn"
+  external u128_equal : u128 -> u128 -> bool = "checked_oint_u128_equal" [@@noalloc]
+  external u128_compare : u128 -> u128 -> int = "checked_oint_u128_compare" [@@noalloc]
+  external u128_min : unit -> u128 = "checked_oint_u128_min"
+  external u128_max : unit -> u128 = "checked_oint_u128_max"
+  external u128_of_int_unchecked : int -> u128 = "checked_oint_u128_of_int_unchecked"
+  external u128_print : u128 -> string = "checked_oint_u128_print"
+  external u128_scan_exn : string -> int -> u128 = "checked_oint_u128_scan_exn"
+  external u128_add : u128 -> u128 -> u128 = "checked_oint_u128_add"
+  external u128_sub : u128 -> u128 -> u128 = "checked_oint_u128_sub"
+  external u128_mul : u128 -> u128 -> u128 = "checked_oint_u128_mul"
+  external u128_div : u128 -> u128 -> u128 = "checked_oint_u128_div"
+  external u128_rem : u128 -> u128 -> u128 = "checked_oint_u128_rem"
+  external u128_bit_not : u128 -> u128 = "checked_oint_u128_bit_not"
+  external u128_bit_or : u128 -> u128 -> u128 = "checked_oint_u128_bit_or"
+  external u128_bit_and : u128 -> u128 -> u128 = "checked_oint_u128_bit_and"
+  external u128_bit_xor : u128 -> u128 -> u128 = "checked_oint_u128_bit_xor"
+  external u128_shift_left : u128 -> u128 -> u128 = "checked_oint_u128_shift_left"
+  external u128_shift_right : u128 -> u128 -> u128 = "checked_oint_u128_shift_right"
+  external i128_equal : i128 -> i128 -> bool = "checked_oint_i128_equal" [@@noalloc]
+  external i128_compare : i128 -> i128 -> int = "checked_oint_i128_compare" [@@noalloc]
+  external i128_min : unit -> i128 = "checked_oint_i128_min"
+  external i128_max : unit -> i128 = "checked_oint_i128_max"
+  external i128_of_int_unchecked : int -> i128 = "checked_oint_i128_of_int_unchecked"
+  external i128_print : i128 -> string = "checked_oint_i128_print"
+  external i128_scan_exn : string -> int -> i128 = "checked_oint_i128_scan_exn"
+  external i128_add : i128 -> i128 -> i128 = "checked_oint_i128_add"
+  external i128_sub : i128 -> i128 -> i128 = "checked_oint_i128_sub"
+  external i128_mul : i128 -> i128 -> i128 = "checked_oint_i128_mul"
+  external i128_div : i128 -> i128 -> i128 = "checked_oint_i128_div"
+  external i128_rem : i128 -> i128 -> i128 = "checked_oint_i128_rem"
+  external i128_bit_not : i128 -> i128 = "checked_oint_i128_bit_not"
+  external i128_bit_or : i128 -> i128 -> i128 = "checked_oint_i128_bit_or"
+  external i128_bit_and : i128 -> i128 -> i128 = "checked_oint_i128_bit_and"
+  external i128_bit_xor : i128 -> i128 -> i128 = "checked_oint_i128_bit_xor"
+  external i128_shift_left : i128 -> i128 -> i128 = "checked_oint_i128_shift_left"
+  external i128_shift_right : i128 -> i128 -> i128 = "checked_oint_i128_shift_right"
+end
+[@@ocamlformat "module-item-spacing = compact"]
 
 exception Out_of_range
-
-module C = struct
-  open Foreign
-
-  type u128
-
-  let u128 : u128 structure typ = structure "u128"
-
-  let u128_high = field u128 "high" uint64_t
-
-  let u128_low = field u128 "low" uint64_t
-
-  let () = seal u128
-
-  type i128
-
-  let i128 : i128 structure typ = structure "i128"
-
-  let i128_high = field i128 "high" uint64_t
-
-  let i128_low = field i128 "low" uint64_t
-
-  let () = seal i128
-
-  let print_u128, print_i128 =
-      let summon (suffix, ty) =
-          foreign ("checked_oint_print_" ^ suffix) (ty @-> ptr char @-> returning int)
-      in
-      summon ("u128", u128), summon ("i128", i128)
-  ;;
-
-  let scan_u32, scan_u64, scan_i32, scan_i64, scan_u128, scan_i128 =
-      let summon (suffix, ty) =
-          foreign
-            ("checked_oint_scan_" ^ suffix)
-            (string @-> ptr ty @-> int @-> returning int)
-      in
-      ( summon ("u32", int32_t)
-      , summon ("u64", int64_t)
-      , summon ("i32", int32_t)
-      , summon ("i64", int64_t)
-      , summon ("u128", u128)
-      , summon ("i128", i128) )
-  ;;
-
-  let scan_int =
-      foreign "checked_oint_scan_int" (string @-> ptr int @-> int @-> returning int)
-  ;;
-
-  (* Avoid problems with the sign bit by calling into C. *)
-  let ( (bit_not_i8, bit_not_i16)
-      , (shift_left_i8, shift_right_i8)
-      , (shift_left_i16, shift_right_i16) )
-    =
-      let summon_op1 (name, suffix, ty) =
-          foreign ("checked_oint_" ^ name ^ "_" ^ suffix) (ty @-> returning ty)
-      in
-      let summon_op2 (name, suffix, ty) =
-          foreign ("checked_oint_" ^ name ^ "_" ^ suffix) (ty @-> ty @-> returning ty)
-      in
-      let summon_shifts (suffix, ty) =
-          summon_op2 ("shift_left", suffix, ty), summon_op2 ("shift_right", suffix, ty)
-      in
-      ( (summon_op1 ("bit_not", "i8", int), summon_op1 ("bit_not", "i16", int))
-      , summon_shifts ("i8", int)
-      , summon_shifts ("i16", int) )
-  ;;
-
-  let ( ( equal_u128
-        , compare_u128
-        , u128_min
-        , u128_max
-        , u128_of_int_unchecked
-        , add_u128
-        , sub_u128
-        , mul_u128
-        , div_u128
-        , rem_u128
-        , bit_not_u128
-        , bit_or_u128
-        , bit_and_u128
-        , bit_xor_u128
-        , shift_left_u128
-        , shift_right_u128 )
-      , ( equal_i128
-        , compare_i128
-        , i128_min
-        , i128_max
-        , i128_of_int_unchecked
-        , add_i128
-        , sub_i128
-        , mul_i128
-        , div_i128
-        , rem_i128
-        , bit_not_i128
-        , bit_or_i128
-        , bit_and_i128
-        , bit_xor_i128
-        , shift_left_i128
-        , shift_right_i128 ) )
-    =
-      let summon_op1 (suffix, name, ty) =
-          foreign ("checked_oint_" ^ name ^ "_" ^ suffix) (ty @-> returning ty)
-      in
-      let summon_op2 (suffix, name, ty) =
-          foreign ("checked_oint_" ^ name ^ "_" ^ suffix) (ty @-> ty @-> returning ty)
-      in
-      let summon (suffix, ty) =
-          ( foreign ("checked_oint_equal_" ^ suffix) (ty @-> ty @-> returning bool)
-          , foreign ("checked_oint_compare_" ^ suffix) (ty @-> ty @-> returning int)
-          , foreign ("checked_oint_min_" ^ suffix) (void @-> returning ty)
-          , foreign ("checked_oint_max_" ^ suffix) (void @-> returning ty)
-          , foreign ("checked_oint_of_int_unchecked_" ^ suffix) (int @-> returning ty)
-          , summon_op2 (suffix, "add", ty)
-          , summon_op2 (suffix, "sub", ty)
-          , summon_op2 (suffix, "mul", ty)
-          , summon_op2 (suffix, "div", ty)
-          , summon_op2 (suffix, "rem", ty)
-          , summon_op1 (suffix, "bit_not", ty)
-          , summon_op2 (suffix, "bit_or", ty)
-          , summon_op2 (suffix, "bit_and", ty)
-          , summon_op2 (suffix, "bit_xor", ty)
-          , summon_op2 (suffix, "shift_left", ty)
-          , summon_op2 (suffix, "shift_right", ty) )
-      in
-      summon ("u128", u128), summon ("i128", i128)
-  ;;
-end
 
 (* Polymorphic comparison operators will raise an exception on [unit -> unit]. *)
 type 'a wrapper = (unit -> unit) * 'a
@@ -145,14 +75,7 @@ let wrap_op1 f x = wrap (f (unwrap x))
 
 let wrap_op2 f x y = wrap (f (unwrap x) (unwrap y))
 
-let wrap_to_string f x =
-    let min_i128_s = "-170141183460469231731687303715884105728" in
-    (* Including the null character. *)
-    let max_int_print_size = String.length min_i128_s + 1 in
-    assert (max_int_print_size = 41);
-    let buffer = allocate_n char ~count:max_int_print_size in
-    string_from_ptr ~length:(f (unwrap x) buffer) buffer
-;;
+let wrap_to_string f x = f (unwrap x)
 
 let equal_int_wrapper x y = unwrap x = unwrap y
 
@@ -190,15 +113,15 @@ type u64_wrapper = Int64.t wrapper
 
 type u64 = u64_wrapper [@@deriving eq, show, ord]
 
-let u128_to_string = wrap_to_string C.print_u128
+let u128_to_string = wrap_to_string C.u128_print
 
-let equal_u128_wrapper x y = C.equal_u128 (unwrap x) (unwrap y)
+let equal_u128_wrapper x y = C.u128_equal (unwrap x) (unwrap y)
 
 let pp_u128_wrapper fmt x = Format.pp_print_string fmt (u128_to_string x)
 
-let compare_u128_wrapper x y = C.compare_u128 (unwrap x) (unwrap y)
+let compare_u128_wrapper x y = C.u128_compare (unwrap x) (unwrap y)
 
-type u128_wrapper = C.u128 structure wrapper
+type u128_wrapper = C.u128 wrapper
 
 type u128 = u128_wrapper [@@deriving eq, show, ord]
 
@@ -226,19 +149,17 @@ type i64_wrapper = Int64.t wrapper
 
 type i64 = i64_wrapper [@@deriving eq, show, ord]
 
-let i128_to_string = wrap_to_string C.print_i128
+let i128_to_string = wrap_to_string C.i128_print
 
-let equal_i128_wrapper x y = C.equal_i128 (unwrap x) (unwrap y)
+let equal_i128_wrapper x y = C.i128_equal (unwrap x) (unwrap y)
 
 let pp_i128_wrapper fmt x = Format.pp_print_string fmt (i128_to_string x)
 
-let compare_i128_wrapper x y = C.compare_i128 (unwrap x) (unwrap y)
+let compare_i128_wrapper x y = C.i128_compare (unwrap x) (unwrap y)
 
-type i128_wrapper = C.i128 structure wrapper
+type i128_wrapper = C.i128 wrapper
 
 type i128 = i128_wrapper [@@deriving eq, show, ord]
-
-let extract_i64_field x field = wrap (Unsigned.UInt64.to_int64 (getf (unwrap x) field))
 
 [@@@coverage off]
 
@@ -363,12 +284,10 @@ struct
 
   let of_string s =
       let base, s = determine_base s in
-      let x_ptr = allocate int 0 in
-      let rc = C.scan_int s x_ptr base in
-      let n = !@x_ptr in
-      if rc != 0 || n < unwrap S.min_int || n > unwrap S.max_int
-      then None
-      else Some (wrap n)
+      match C.int_scan_exn s base with
+      | exception Failure _s -> None
+      | n when n < unwrap S.min_int || n > unwrap S.max_int -> None
+      | n -> Some (wrap n)
   ;;
 end
 [@@ocamlformat "module-item-spacing = compact"]
@@ -440,9 +359,8 @@ module U32_basic : Basic with type t = u32 = struct
 
   let of_string s =
       let base, s = determine_base s in
-      let x_ptr = allocate int32_t Int32.zero in
-      let rc = C.scan_u32 s x_ptr base in
-      if rc != 0 then None else Some (wrap !@x_ptr)
+      try Some (wrap (C.u32_scan_exn s base)) with
+      | Failure _s -> None
   ;;
 
   let to_generic x = U32 x [@@coverage off]
@@ -475,9 +393,8 @@ module U64_basic : Basic with type t = u64 = struct
 
   let of_string s =
       let base, s = determine_base s in
-      let x_ptr = allocate int64_t Int64.zero in
-      let rc = C.scan_u64 s x_ptr base in
-      if rc != 0 then None else Some (wrap !@x_ptr)
+      try Some (wrap (C.u64_scan_exn s base)) with
+      | Failure _s -> None
   ;;
 
   let to_generic x = U64 x [@@coverage off]
@@ -491,24 +408,23 @@ module U128_basic : Basic with type t = u128 = struct
   let min_int = wrap (C.u128_min ())
   let max_int = wrap (C.u128_max ())
   let of_int_unchecked x = wrap (C.u128_of_int_unchecked x)
-  let add_unchecked = wrap_op2 C.add_u128
-  let sub_unchecked = wrap_op2 C.sub_u128
-  let mul_unchecked = wrap_op2 C.mul_u128
-  let div_unchecked = wrap_op2 C.div_u128
-  let rem_unchecked = wrap_op2 C.rem_u128
-  let shift_left_unchecked = wrap_op2 C.shift_left_u128
-  let shift_right_unchecked = wrap_op2 C.shift_right_u128
-  let bit_not = wrap_op1 C.bit_not_u128
-  let bit_or = wrap_op2 C.bit_or_u128
-  let bit_and = wrap_op2 C.bit_and_u128
-  let bit_xor = wrap_op2 C.bit_xor_u128
+  let add_unchecked = wrap_op2 C.u128_add
+  let sub_unchecked = wrap_op2 C.u128_sub
+  let mul_unchecked = wrap_op2 C.u128_mul
+  let div_unchecked = wrap_op2 C.u128_div
+  let rem_unchecked = wrap_op2 C.u128_rem
+  let shift_left_unchecked = wrap_op2 C.u128_shift_left
+  let shift_right_unchecked = wrap_op2 C.u128_shift_right
+  let bit_not = wrap_op1 C.u128_bit_not
+  let bit_or = wrap_op2 C.u128_bit_or
+  let bit_and = wrap_op2 C.u128_bit_and
+  let bit_xor = wrap_op2 C.u128_bit_xor
   let of_int x = if x < 0 then None else Some (of_int_unchecked x)
 
   let of_string s =
       let base, s = determine_base s in
-      let x_ptr = addr (make C.u128) in
-      let rc = C.scan_u128 s x_ptr base in
-      if rc != 0 then None else Some (wrap !@x_ptr)
+      try Some (wrap (C.u128_scan_exn s base)) with
+      | Failure _s -> None
   ;;
 
   let to_generic x = U128 x [@@coverage off]
@@ -521,9 +437,9 @@ module I8_basic : Basic with type t = i8 = struct
   let bits = 8
   let min_int = wrap (-128)
   let max_int = wrap 127
-  let shift_left_unchecked = wrap_op2 C.shift_left_i8
-  let shift_right_unchecked = wrap_op2 C.shift_right_i8
-  let bit_not = wrap_op1 C.bit_not_i8
+  let shift_left_unchecked = wrap_op2 C.i8_shift_left
+  let shift_right_unchecked = wrap_op2 C.i8_shift_right
+  let bit_not = wrap_op1 C.i8_bit_not
   let to_generic x = I8 x [@@coverage off]
 
   include Inherit_int_basic (struct
@@ -539,9 +455,9 @@ module I16_basic : Basic with type t = i16 = struct
   let bits = 16
   let min_int = wrap (-32768)
   let max_int = wrap 32767
-  let shift_left_unchecked = wrap_op2 C.shift_left_i16
-  let shift_right_unchecked = wrap_op2 C.shift_right_i16
-  let bit_not = wrap_op1 C.bit_not_i16
+  let shift_left_unchecked = wrap_op2 C.i16_shift_left
+  let shift_right_unchecked = wrap_op2 C.i16_shift_right
+  let bit_not = wrap_op1 C.i16_bit_not
   let to_generic x = I16 x [@@coverage off]
 
   include Inherit_int_basic (struct
@@ -581,9 +497,8 @@ module I32_basic : Basic with type t = i32 = struct
 
   let of_string s =
       let base, s = determine_base s in
-      let x_ptr = allocate int32_t Int32.zero in
-      let rc = C.scan_i32 s x_ptr base in
-      if rc != 0 then None else Some (wrap !@x_ptr)
+      try Some (wrap (C.i32_scan_exn s base)) with
+      | Failure _s -> None
   ;;
 
   let to_generic x = I32 x [@@coverage off]
@@ -612,9 +527,8 @@ module I64_basic : Basic with type t = i64 = struct
 
   let of_string s =
       let base, s = determine_base s in
-      let x_ptr = allocate int64_t Int64.zero in
-      let rc = C.scan_i64 s x_ptr base in
-      if rc != 0 then None else Some (wrap !@x_ptr)
+      try Some (wrap (C.i64_scan_exn s base)) with
+      | Failure _s -> None
   ;;
 
   let to_generic x = I64 x [@@coverage off]
@@ -628,24 +542,23 @@ module I128_basic : Basic with type t = i128 = struct
   let min_int = wrap (C.i128_min ())
   let max_int = wrap (C.i128_max ())
   let of_int_unchecked x = wrap (C.i128_of_int_unchecked x)
-  let add_unchecked = wrap_op2 C.add_i128
-  let sub_unchecked = wrap_op2 C.sub_i128
-  let mul_unchecked = wrap_op2 C.mul_i128
-  let div_unchecked = wrap_op2 C.div_i128
-  let rem_unchecked = wrap_op2 C.rem_i128
-  let shift_left_unchecked = wrap_op2 C.shift_left_i128
-  let shift_right_unchecked = wrap_op2 C.shift_right_i128
-  let bit_not = wrap_op1 C.bit_not_i128
-  let bit_or = wrap_op2 C.bit_or_i128
-  let bit_and = wrap_op2 C.bit_and_i128
-  let bit_xor = wrap_op2 C.bit_xor_i128
+  let add_unchecked = wrap_op2 C.i128_add
+  let sub_unchecked = wrap_op2 C.i128_sub
+  let mul_unchecked = wrap_op2 C.i128_mul
+  let div_unchecked = wrap_op2 C.i128_div
+  let rem_unchecked = wrap_op2 C.i128_rem
+  let shift_left_unchecked = wrap_op2 C.i128_shift_left
+  let shift_right_unchecked = wrap_op2 C.i128_shift_right
+  let bit_not = wrap_op1 C.i128_bit_not
+  let bit_or = wrap_op2 C.i128_bit_or
+  let bit_and = wrap_op2 C.i128_bit_and
+  let bit_xor = wrap_op2 C.i128_bit_xor
   let of_int x = Some (of_int_unchecked x)
 
   let of_string s =
       let base, s = determine_base s in
-      let x_ptr = addr (make C.i128) in
-      let rc = C.scan_i128 s x_ptr base in
-      if rc != 0 then None else Some (wrap !@x_ptr)
+      try Some (wrap (C.i128_scan_exn s base)) with
+      | Failure _s -> None
   ;;
 
   let to_generic x = I128 x [@@coverage off]
@@ -859,7 +772,7 @@ end = struct
   include Make (U128_basic)
 
   let split (x : u128) : u64 * u64 =
-      C.(extract_i64_field x u128_high, extract_i64_field x u128_low)
+      C.(wrap (unwrap x).u128_high, wrap (unwrap x).u128_low)
   ;;
 end
 
@@ -879,7 +792,7 @@ end = struct
   include Make (I128_basic)
 
   let split (x : i128) : u64 * u64 =
-      C.(extract_i64_field x i128_high, extract_i64_field x i128_low)
+      C.(wrap (unwrap x).i128_high, wrap (unwrap x).i128_low)
   ;;
 end
 
