@@ -10,4 +10,4 @@
   (language c)
   (names support)
   (extra_deps int128_support.c)
-  (flags -O3)))
+  (flags -O3 -std=gnu99)))
