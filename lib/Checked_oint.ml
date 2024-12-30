@@ -140,7 +140,7 @@ end
 (* Polymorphic comparison operators will raise an exception on [unit -> unit]. *)
 type 'a wrapper = (unit -> unit) * 'a
 
-let wrap x = (((fun () -> ()), x) [@coverage off])
+let wrap x = ((fun () -> ()), x) [@coverage off]
 
 let unwrap (_f, x) = x
 
@@ -150,7 +150,8 @@ let wrap_op2 f x y = wrap (f (unwrap x) (unwrap y))
 
 let wrap_to_string f x =
     let min_i128_s = "-170141183460469231731687303715884105728" in
-    let max_int_print_size = String.length min_i128_s + (* the null character *) 1 in
+    (* Including the null character. *)
+    let max_int_print_size = String.length min_i128_s + 1 in
     assert (max_int_print_size = 41);
     let buffer = allocate_n char ~count:max_int_print_size in
     string_from_ptr ~length:(f (unwrap x) buffer) buffer
