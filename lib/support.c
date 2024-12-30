@@ -35,18 +35,6 @@ X(shift_right, 16, int16_t, >>)
 
 #undef X
 
-#define X(signedness, bitness, ty)                                             \
-    int checked_oint_print_##signedness##bitness(                              \
-        const int##bitness##_t x,                                              \
-        char buffer[const restrict static MAX_INT_PRINT_SIZE]) {               \
-        return sprintf(buffer, "%" PRI##signedness##bitness, (ty)x);           \
-    }
-
-X(u, 32, uint32_t)
-X(u, 64, uint64_t)
-
-#undef X
-
 static bool is_valid_base(const int base) {
     switch (base) {
     case 2:

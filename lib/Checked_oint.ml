@@ -29,14 +29,11 @@ module C = struct
 
   let () = seal i128
 
-  let print_u32, print_u64, print_u128, print_i128 =
+  let print_u128, print_i128 =
       let summon (suffix, ty) =
           foreign ("checked_oint_print_" ^ suffix) (ty @-> ptr char @-> returning int)
       in
-      ( summon ("u32", int32_t)
-      , summon ("u64", int64_t)
-      , summon ("u128", u128)
-      , summon ("i128", i128) )
+      summon ("u128", u128), summon ("i128", i128)
   ;;
 
   let scan_u32, scan_u64, scan_i32, scan_i64, scan_u128, scan_i128 =
@@ -169,7 +166,7 @@ type u8 = int_wrapper [@@deriving eq, show, ord]
 
 type u16 = int_wrapper [@@deriving eq, show, ord]
 
-let u32_to_string = wrap_to_string C.print_u32
+let u32_to_string x = Printf.sprintf "%lu" (unwrap x)
 
 let equal_u32_wrapper x y = Int32.equal (unwrap x) (unwrap y)
 
@@ -181,7 +178,7 @@ type u32_wrapper = Int32.t wrapper
 
 type u32 = u32_wrapper [@@deriving eq, show, ord]
 
-let u64_to_string = wrap_to_string C.print_u64
+let u64_to_string x = Printf.sprintf "%Lu" (unwrap x)
 
 let equal_u64_wrapper x y = Int64.equal (unwrap x) (unwrap y)
 
