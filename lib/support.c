@@ -47,13 +47,23 @@ X(u, 64, uint64_t)
 
 #undef X
 
+static bool is_valid_base(const int base) {
+    switch (base) {
+    case 2:
+    case 8:
+    case 10:
+    case 16: return true;
+    default: return false;
+    }
+}
+
 #define X(postfix, int_ty, f, max_int_ty, int_min, int_max)                    \
     int checked_oint_scan_##postfix(                                           \
         const char s[const restrict], int_ty *const restrict x,                \
         const int base) {                                                      \
         assert(s);                                                             \
         assert(x);                                                             \
-        assert(2 == base || 8 == base || 10 == base || 16 == base);            \
+        assert(is_valid_base(base));                                           \
                                                                                \
         if (isspace(s[0]) || '\0' == s[0]) {                                   \
             return -1;                                                         \
@@ -144,7 +154,7 @@ X(int, int, strtoimax, intmax_t, INT_MIN, INT_MAX)
         struct signedness##128 *const restrict x, const int base) {            \
         assert(s);                                                             \
         assert(x);                                                             \
-        assert(2 == base || 8 == base || 10 == base || 16 == base);            \
+        assert(is_valid_base(base));                                           \
                                                                                \
         gcc_ty result = 0;                                                     \
         if (0 == scan_##signedness##128(s, &result, base)) {                   \
