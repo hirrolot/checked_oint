@@ -1,5 +1,6 @@
 #include "int128_support.c"
 
+#include <assert.h>
 #include <ctype.h>
 #include <errno.h>
 #include <inttypes.h>
@@ -113,6 +114,16 @@ X(i64, strtoimax, intmax_t)
 
 #undef X
 
+static bool is_valid_base(const int base) {
+    switch (base) {
+    case 2:
+    case 8:
+    case 10:
+    case 16: return true;
+    default: return false;
+    }
+}
+
 #define X(namespace)                                                           \
     value checked_oint_##namespace##_bit_not(value x) {                        \
         CAMLparam1(x);                                                         \
@@ -136,16 +147,6 @@ X(i16, shift_left, <<)
 X(i16, shift_right, >>)
 
 #undef X
-
-static bool is_valid_base(const int base) {
-    switch (base) {
-    case 2:
-    case 8:
-    case 10:
-    case 16: return true;
-    default: return false;
-    }
-}
 
 #define X(namespace)                                                           \
     value checked_oint_##namespace##_scan_exn(value s, value base) {           \
