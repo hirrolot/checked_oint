@@ -22,6 +22,18 @@ let () =
 
 You can find the API documentation [here](https://hirrolot.github.io/checked_oint/checked_oint/Checked_oint/index.html).
 
+## Implementation
+
+ - `u8`, `u16`, `i8`, and `i16` are represented as `int` internally.
+ - `u32` and `i32` (resp. `u64` and `i64`) are represented as `int32` (resp. `int64`) internally.
+ - `u128` and `i128` are represented as `{ high : int64; low : int64 }` internally.
+ - Operations on integers of 8, 16, 32, and 64 bits are implemented primarily in OCaml, save a small amount of C [stub functions].
+ - Operations on 128-bit integers are implemented solely in C.
+   - We heavily rely on the [`__int128` extension] by GCC and Clang.
+
+[stub functions]: https://ocaml.org/manual/latest/intfc.html
+[`__int128` extension]: https://gcc.gnu.org/onlinedocs/gcc/_005f_005fint128.html
+
 ## Release procedure
 
  1. Update the `version` field in `dune-project`.
