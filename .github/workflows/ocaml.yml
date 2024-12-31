@@ -6,16 +6,31 @@ on:
   pull_request:
     branches: [ "master" ]
 
-jobs:
-  build:
+env:
+  HTML_DOCS_DIR: _build/default/_doc/_html
 
-    runs-on: ubuntu-latest
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+
+    runs-on: ${{ matrix.os }}
 
     steps:
     - uses: actions/checkout@v3
 
-    - name: Install Ubuntu packages
-      run: sudo apt install bubblewrap
+    - name: Install system packages
+      run: |
+        if [ "$RUNNER_OS" == "Linux" ]; then
+          sudo apt install bubblewrap
+        elif [ "$RUNNER_OS" == "macOS" ]; then
+          brew install gpatch
+        else
+          echo "$RUNNER_OS is not supported!"
+          exit 1
+        fi
+      shell: bash
 
     - name: Install Opam
       run: |
@@ -26,7 +41,7 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ~/.opam
-        key: ${{ hashFiles('**.opam') }}
+        key: ${{ runner.os }}-${{ hashFiles('**.opam') }}
 
     - name: Initialize Opam
       if: steps.cache-opam.outputs.cache-hit != 'true'
@@ -48,10 +63,31 @@ jobs:
       run: opam exec ./scripts/test-clang.sh
 
     - name: Generate documentation
+      if: matrix.os == 'ubuntu-latest'
       run: opam exec dune build @doc
+
+    - name: Upload documentation artifact
+      if: matrix.os == 'ubuntu-latest'
+      uses: actions/upload-artifact@v4
+      with:
+        name: html-docs
+        path: ${{ env.HTML_DOCS_DIR }}
+
+  deploy-docs:
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Download documentation artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: html-docs
+        path: ${{ env.HTML_DOCS_DIR }}
 
     - name: Deploy documentation
       uses: JamesIves/github-pages-deploy-action@v4
       with:
         branch: gh-pages
-        folder: _build/default/_doc/_html
+        folder: ${{ env.HTML_DOCS_DIR }}
