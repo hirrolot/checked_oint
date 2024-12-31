@@ -141,9 +141,7 @@ X(i16)
     value checked_oint_##namespace##_##name(value x, value y) {                \
         CAMLparam2(x, y);                                                      \
         assert(Int_val(y) >= 0);                                               \
-        assert(                                                                \
-            C_VALUE(namespace, y) <                                            \
-            (C_INT_TY(namespace))C_INT_BIT_WIDTH(namespace));                  \
+        assert(Int_val(y) < (int)C_INT_BIT_WIDTH(namespace));                  \
                                                                                \
         CAMLreturn(Val_int((int)(C_VALUE(namespace, x) op Int_val(y))));       \
     }
