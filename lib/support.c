@@ -8,7 +8,6 @@
 #include <limits.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <stdio.h>
 
 #include <caml/alloc.h>
 #include <caml/fail.h>
