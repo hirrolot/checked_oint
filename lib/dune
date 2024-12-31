@@ -8,5 +8,5 @@
  (foreign_stubs
   (language c)
   (names support)
-  (extra_deps int128_support.c)
+  (extra_deps int128_support.c int_macros.h)
   (flags -O3 -std=gnu11)))
