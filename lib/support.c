@@ -79,6 +79,8 @@
 #define C_INT_MAX_i64        INT64_MAX
 #define C_INT_MAX_i128       I128_MAX
 
+#define C_INT_BIT_WIDTH(namespace) (sizeof(C_INT_TY(namespace)) * CHAR_BIT)
+
 static bool is_valid_base(const int base) {
     switch (base) {
     case 2:
@@ -138,6 +140,9 @@ X(i16)
 #define X(namespace, name, op)                                                 \
     value checked_oint_##namespace##_##name(value x, value y) {                \
         CAMLparam2(x, y);                                                      \
+        assert(Int_val(y) >= 0);                                               \
+        assert(Int_val(y) < C_INT_BIT_WIDTH(namespace));                       \
+                                                                               \
         CAMLreturn(Val_int((int)(C_VALUE(namespace, x) op Int_val(y))));       \
     }
 
