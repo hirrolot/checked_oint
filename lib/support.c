@@ -55,10 +55,10 @@
 
 #define C_INT_MIN(namespace) C_INT_MIN_##namespace
 #define C_INT_MIN_int        INT_MIN
-#define C_INT_MIN_u8         ((uint8_t)0)
-#define C_INT_MIN_u16        ((uint16_t)0)
-#define C_INT_MIN_u32        ((uint32_t)0)
-#define C_INT_MIN_u64        ((uint64_t)0)
+#define C_INT_MIN_u8         UINT8_C(0)
+#define C_INT_MIN_u16        UINT16_C(0)
+#define C_INT_MIN_u32        UINT32_C(0)
+#define C_INT_MIN_u64        UINT64_C(0)
 #define C_INT_MIN_u128       U128_MIN
 #define C_INT_MIN_i8         INT8_MIN
 #define C_INT_MIN_i16        INT16_MIN
