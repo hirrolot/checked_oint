@@ -79,6 +79,16 @@
 #define C_INT_MAX_i64        INT64_MAX
 #define C_INT_MAX_i128       I128_MAX
 
+static bool is_valid_base(const int base) {
+    switch (base) {
+    case 2:
+    case 8:
+    case 10:
+    case 16: return true;
+    default: return false;
+    }
+}
+
 #define X(namespace, f, max_int_ty)                                            \
     static int impl_##namespace##_scan_exn(                                    \
         const char s[const restrict], C_INT_TY(namespace) *const restrict x,   \
@@ -113,16 +123,6 @@ X(i32, strtoimax, intmax_t)
 X(i64, strtoimax, intmax_t)
 
 #undef X
-
-static bool is_valid_base(const int base) {
-    switch (base) {
-    case 2:
-    case 8:
-    case 10:
-    case 16: return true;
-    default: return false;
-    }
-}
 
 #define X(namespace)                                                           \
     value checked_oint_##namespace##_bit_not(value x) {                        \
