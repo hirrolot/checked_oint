@@ -9,15 +9,10 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wc11-extensions"
-
 #include <caml/alloc.h>
 #include <caml/fail.h>
 #include <caml/memory.h>
 #include <caml/mlvalues.h>
-
-#pragma clang diagnostic pop
 
 #define C_VALUE(namespace, x) C_VALUE_##namespace(x)
 #define C_VALUE_int(x)        Int_val(x)
