@@ -9,4 +9,10 @@
   (language c)
   (names support)
   (extra_deps int128_support.c int_macros.h)
-  (flags -O3 -std=gnu11)))
+  (flags
+   (:standard -std=gnu11))))
+
+(env
+ (release
+  (c_flags
+   (:standard -O3 -DNDEBUG))))
