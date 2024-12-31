@@ -45,7 +45,7 @@ jobs:
       run: opam exec ./scripts/test.sh
 
     - name: Compile with Clang
-      run: opam exec ./scripts/compile.sh
+      run: opam exec ./scripts/test-clang.sh
 
     - name: Generate documentation
       run: opam exec dune build @doc
