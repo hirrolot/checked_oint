@@ -14,6 +14,8 @@
 #include <caml/memory.h>
 #include <caml/mlvalues.h>
 
+#ifndef NDEBUG
+
 static bool is_valid_base(const int base) {
     switch (base) {
     case 2:
@@ -23,6 +25,8 @@ static bool is_valid_base(const int base) {
     default: return false;
     }
 }
+
+#endif // NDEBUG
 
 #define X(namespace, f, max_int_ty)                                            \
     static int impl_##namespace##_scan_exn(                                    \
