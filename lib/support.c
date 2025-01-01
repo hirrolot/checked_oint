@@ -80,7 +80,8 @@ X(i16)
         assert(Int_val(y) >= 0);                                               \
         assert(Int_val(y) < (int)C_INT_BIT_WIDTH(namespace));                  \
                                                                                \
-        CAMLreturn(Val_int((int)(C_VALUE(namespace, x) op Int_val(y))));       \
+        CAMLreturn(                                                            \
+            Val_int((int)(C_VALUE(namespace, x) op C_VALUE(namespace, y))));   \
     }
 
 X(i8, shift_left, <<)
