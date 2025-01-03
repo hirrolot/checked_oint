@@ -6,8 +6,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## unreleased
 
-## 0.4.1 - 2025-01-03
-
 ### Changed
 
  - Use [manual interfacing with C] instead of [`ocaml-ctypes`].
