@@ -40,6 +40,12 @@ You can find the API documentation [here](https://hirrolot.github.io/checked_oin
  1. Type `dune build` to generate `checked_oint.opam`.
  1. Update `CHANGELOG.md`.
  1. Release the project in [GitHub Releases].
+    1. Generate a source code archive and include it in the release:
+       <br>`git archive HEAD -o checked_oint-<major>.<minor>.<patch>.tar.gz`
  1. Type `git pull && opam publish`.
 
 [GitHub Releases]: https://github.com/hirrolot/checked_oint/releases
+
+Including the output of `git archive` is needed because GitHub does not guarantee [stability of source code archives]. With a static asset, we will always get the same checksum, which is crucial for packaging.
+
+[stability of source code archives]: https://github.blog/open-source/git/update-on-the-future-stability-of-source-code-archives-and-hashes/
