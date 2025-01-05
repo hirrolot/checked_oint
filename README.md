@@ -43,6 +43,7 @@ You can find the API documentation [here](https://hirrolot.github.io/checked_oin
     1. Generate a source code archive and include it in the release:
        <br>`git archive HEAD -o checked_oint-<major>.<minor>.<patch>.tar.gz`
  1. Type `git pull && opam publish`.
+    1. Specify the correct archive URL and checksums (by running `md5sum` and `sha512sum` on the archive).
 
 [GitHub Releases]: https://github.com/hirrolot/checked_oint/releases
 
