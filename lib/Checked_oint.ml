@@ -333,7 +333,7 @@ module U32_basic : Basic with type t = u32 = struct
 
   let bits = 32
   let min_int = wrap Int32.zero
-  let max_int = wrap (Int32.lognot (unwrap min_int))
+  let max_int = wrap Int32.minus_one
   let of_int_unchecked x = wrap (Int32.of_int x)
   let add_unchecked = wrap_op2 Int32.add
   let sub_unchecked = wrap_op2 Int32.sub
@@ -372,7 +372,7 @@ module U64_basic : Basic with type t = u64 = struct
 
   let bits = 64
   let min_int = wrap Int64.zero
-  let max_int = wrap (Int64.lognot (unwrap min_int))
+  let max_int = wrap Int64.minus_one
   let of_int_unchecked x = wrap (Int64.of_int x)
   let add_unchecked = wrap_op2 Int64.add
   let sub_unchecked = wrap_op2 Int64.sub
