@@ -47,6 +47,11 @@ You can find the API documentation [here](https://hirrolot.github.io/checked_oin
 
 [GitHub Releases]: https://github.com/hirrolot/checked_oint/releases
 
+<details>
+<summary>On the stability of source code archives</summary>
+
 Including the output of `git archive` is needed because GitHub does not guarantee [stability of source code archives]. With a static asset, we will always get the same checksum, which is crucial for packaging.
 
 [stability of source code archives]: https://github.blog/open-source/git/update-on-the-future-stability-of-source-code-archives-and-hashes/
+
+</details>
