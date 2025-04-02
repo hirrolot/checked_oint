@@ -347,31 +347,28 @@ let generic_conversion () =
               ( Destination.(to_string (of_generic_exn (Source.to_generic x)))
               , Source.to_string x )
         in
-        let _check_raises msg x =
+        let check_raises msg x =
             Alcotest.check_raises (make_msg ~prefix:msg x) Out_of_range (fun () ->
               ignore (Destination.of_generic_exn (Source.to_generic x)))
         in
-        if
-          Source.bits = 128
-          && Destination.bits = 32
-          && Source.is_signed
-          && Destination.is_signed
-        then check "Good" (Source.of_int_exn 0);
-        (* check "Good" (Source.of_int_exn 42);
-        if Source.is_signed && Destination.is_signed
-        then check "Good" (Source.of_int_exn (-42)); *)
-        (* if
-          Source.bits > Destination.bits
-          || (Source.bits = Destination.bits
-              && (not Source.is_signed)
-              && Destination.is_signed)
-        then check_raises "Positive overflow" Source.max_int;
-        if
-          Source.is_signed
-          && (Source.bits > Destination.bits
-              || (Source.bits <= Destination.bits && not Destination.is_signed))
-        then check_raises "Negative overflow" Source.min_int; *)
-        ()))
+        if Source.bits != 128
+        then (
+          check "Good" (Source.of_int_exn 0);
+          check "Good" (Source.of_int_exn 42);
+          if Source.is_signed && Destination.is_signed
+          then check "Good" (Source.of_int_exn (-42));
+          if
+            Source.bits > Destination.bits
+            || (Source.bits = Destination.bits
+                && (not Source.is_signed)
+                && Destination.is_signed)
+          then check_raises "Positive overflow" Source.max_int;
+          if
+            Source.is_signed
+            && (Source.bits > Destination.bits
+                || (Source.bits <= Destination.bits && not Destination.is_signed))
+          then check_raises "Negative overflow" Source.min_int;
+          ())))
 ;;
 
 let cases = ("Generic conversion", generic_conversion) :: cases
