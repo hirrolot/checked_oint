@@ -27,7 +27,7 @@ module C = struct
   external u128_compare : u128 -> u128 -> int = "checked_oint_u128_compare" [@@noalloc]
   external u128_min : unit -> u128 = "checked_oint_u128_min"
   external u128_max : unit -> u128 = "checked_oint_u128_max"
-  external u128_of_u64_unchecked : int64 -> u128 = "checked_oint_u128_of_u64_unchecked"
+  external u128_of_u64 : int64 -> u128 = "checked_oint_u128_of_u64"
   external u128_print : u128 -> string = "checked_oint_u128_print"
   external u128_scan_exn : string -> int -> u128 = "checked_oint_u128_scan_exn"
   external u128_add : u128 -> u128 -> u128 = "checked_oint_u128_add"
@@ -45,7 +45,7 @@ module C = struct
   external i128_compare : i128 -> i128 -> int = "checked_oint_i128_compare" [@@noalloc]
   external i128_min : unit -> i128 = "checked_oint_i128_min"
   external i128_max : unit -> i128 = "checked_oint_i128_max"
-  external i128_of_i64_unchecked : int64 -> i128 = "checked_oint_i128_of_i64_unchecked"
+  external i128_of_i64 : int64 -> i128 = "checked_oint_i128_of_i64"
   external i128_print : i128 -> string = "checked_oint_i128_print"
   external i128_scan_exn : string -> int -> i128 = "checked_oint_i128_scan_exn"
   external i128_add : i128 -> i128 -> i128 = "checked_oint_i128_add"
@@ -329,13 +329,13 @@ struct
         then Some (wrap (to_int x))
         else None
       | U128 (_f, x) ->
-        if C.u128_compare x (C.u128_of_u64_unchecked (Int64.of_int max_value)) <= 0
+        if C.u128_compare x (C.u128_of_u64 (Int64.of_int max_value)) <= 0
         then Some (wrap (Int64.to_int x.u128_low))
         else None
       | I128 (_f, x) ->
         if
-          C.i128_compare x (C.i128_of_i64_unchecked (Int64.of_int min_value)) >= 0
-          && C.i128_compare x (C.i128_of_i64_unchecked (Int64.of_int max_value)) <= 0
+          C.i128_compare x (C.i128_of_i64 (Int64.of_int min_value)) >= 0
+          && C.i128_compare x (C.i128_of_i64 (Int64.of_int max_value)) <= 0
         then Some (wrap (C.i128_to_int x))
         else None
   ;;
@@ -425,7 +425,7 @@ module U32_basic : Basic with type t = u32 = struct
         then Some (wrap (Int64.to_int32 x))
         else None
       | U128 (_f, x) ->
-        if C.u128_compare x (C.u128_of_u64_unchecked max_u32_as_i64) <= 0
+        if C.u128_compare x (C.u128_of_u64 max_u32_as_i64) <= 0
         then Some (wrap (Int64.to_int32 x.u128_low))
         else None
       | I8 (_f, x) | I16 (_f, x) -> if x >= 0 then Some (wrap (Int32.of_int x)) else None
@@ -436,8 +436,8 @@ module U32_basic : Basic with type t = u32 = struct
         else None
       | I128 (_f, x) ->
         if
-          C.i128_compare x (C.i128_of_i64_unchecked 0L) >= 0
-          && C.i128_compare x (C.i128_of_i64_unchecked max_u32_as_i64) <= 0
+          C.i128_compare x (C.i128_of_i64 0L) >= 0
+          && C.i128_compare x (C.i128_of_i64 max_u32_as_i64) <= 0
         then Some (wrap (Int64.to_int32 x.i128_low))
         else None
   ;;
@@ -483,7 +483,7 @@ module U64_basic : Basic with type t = u64 = struct
       | U32 (_f, x) -> Some (wrap (Int64.of_int32 x))
       | U64 (_f, x) -> Some (wrap x)
       | U128 (_f, x) ->
-        if C.u128_compare x (C.u128_of_u64_unchecked max_u64_as_i64) <= 0
+        if C.u128_compare x (C.u128_of_u64 max_u64_as_i64) <= 0
         then Some (wrap x.u128_low)
         else None
       | I8 (_f, x) | I16 (_f, x) -> if x >= 0 then Some (wrap (Int64.of_int x)) else None
@@ -492,8 +492,8 @@ module U64_basic : Basic with type t = u64 = struct
       | I64 (_f, x) -> if Int64.(compare x zero >= 0) then Some (wrap x) else None
       | I128 (_f, x) ->
         if
-          C.i128_compare x (C.i128_of_i64_unchecked 0L) >= 0
-          && C.i128_compare x (C.i128_of_i64_unchecked max_u64_as_i64) <= 0
+          C.i128_compare x (C.i128_of_i64 0L) >= 0
+          && C.i128_compare x (C.i128_of_i64 max_u64_as_i64) <= 0
         then Some (wrap x.i128_low)
         else None
   ;;
@@ -506,7 +506,7 @@ module U128_basic : Basic with type t = u128 = struct
   let bits = 128
   let min_int = wrap (C.u128_min ())
   let max_int = wrap (C.u128_max ())
-  let of_int_unchecked x = wrap (C.u128_of_u64_unchecked (Int64.of_int x))
+  let of_int_unchecked x = wrap (C.u128_of_u64 (Int64.of_int x))
   let add_unchecked = wrap_op2 C.u128_add
   let sub_unchecked = wrap_op2 C.u128_sub
   let mul_unchecked = wrap_op2 C.u128_mul
@@ -529,12 +529,12 @@ module U128_basic : Basic with type t = u128 = struct
   let to_generic x = U128 x [@@coverage off]
 
   let of_generic = function
-    | U8 (_f, x) | U16 (_f, x) -> Some (wrap (C.u128_of_u64_unchecked (Int64.of_int x)))
-    | U32 (_f, x) -> Some (wrap (C.u128_of_u64_unchecked (Int64.of_int32 x)))
-    | U64 (_f, x) -> Some (wrap (C.u128_of_u64_unchecked x))
+    | U8 (_f, x) | U16 (_f, x) -> Some (wrap (C.u128_of_u64 (Int64.of_int x)))
+    | U32 (_f, x) -> Some (wrap (C.u128_of_u64 (Int64.of_int32 x)))
+    | U64 (_f, x) -> Some (wrap (C.u128_of_u64 x))
     | U128 (_f, x) -> Some (wrap x)
     | I8 (_f, x) | I16 (_f, x) ->
-      if x >= 0 then Some (wrap (C.u128_of_u64_unchecked (Int64.of_int x))) else None
+      if x >= 0 then Some (wrap (C.u128_of_u64 (Int64.of_int x))) else None
     | I32 (_f, x) ->
       if Int32.(compare x zero >= 0)
       then Some (wrap C.{ u128_high = 0L; u128_low = Int64.of_int32 x })
@@ -544,7 +544,7 @@ module U128_basic : Basic with type t = u128 = struct
       then Some (wrap C.{ u128_high = 0L; u128_low = x })
       else None
     | I128 (_f, x) ->
-      if C.(i128_compare x (C.i128_of_i64_unchecked 0L) >= 0)
+      if C.(i128_compare x (C.i128_of_i64 0L) >= 0)
       then Some (wrap (u128_of_i128 x))
       else None
   ;;
@@ -637,7 +637,7 @@ module I32_basic : Basic with type t = i32 = struct
         then Some (wrap (Int64.to_int32 x))
         else None
       | U128 (_f, x) ->
-        if C.u128_compare x (C.u128_of_u64_unchecked max_i32_as_i64) <= 0
+        if C.u128_compare x (C.u128_of_u64 max_i32_as_i64) <= 0
         then Some (wrap (Int64.to_int32 x.u128_low))
         else None
       | I32 (_f, x) -> Some (wrap x)
@@ -647,8 +647,8 @@ module I32_basic : Basic with type t = i32 = struct
         else None
       | I128 (_f, x) ->
         if
-          C.i128_compare x (C.i128_of_i64_unchecked min_i32_as_i64) >= 0
-          && C.i128_compare x (C.i128_of_i64_unchecked max_i32_as_i64) <= 0
+          C.i128_compare x (C.i128_of_i64 min_i32_as_i64) >= 0
+          && C.i128_compare x (C.i128_of_i64 max_i32_as_i64) <= 0
         then Some (wrap (C.i128_to_i32 x))
         else None
   ;;
@@ -689,14 +689,14 @@ module I64_basic : Basic with type t = i64 = struct
     | U64 (_f, x) ->
       if Int64.(unsigned_compare x max_int <= 0) then Some (wrap x) else None
     | U128 (_f, x) ->
-      if C.u128_compare x (C.u128_of_u64_unchecked Int64.max_int) <= 0
+      if C.u128_compare x (C.u128_of_u64 Int64.max_int) <= 0
       then Some (wrap x.u128_low)
       else None
     | I64 (_f, x) -> Some (wrap x)
     | I128 (_f, x) ->
       if
-        C.i128_compare x (C.i128_of_i64_unchecked Int64.min_int) >= 0
-        && C.i128_compare x (C.i128_of_i64_unchecked Int64.max_int) <= 0
+        C.i128_compare x (C.i128_of_i64 Int64.min_int) >= 0
+        && C.i128_compare x (C.i128_of_i64 Int64.max_int) <= 0
       then Some (wrap (C.i128_to_i64 x))
       else None
   ;;
@@ -709,7 +709,7 @@ module I128_basic : Basic with type t = i128 = struct
   let bits = 128
   let min_int = wrap (C.i128_min ())
   let max_int = wrap (C.i128_max ())
-  let of_int_unchecked x = wrap (C.i128_of_i64_unchecked (Int64.of_int x))
+  let of_int_unchecked x = wrap (C.i128_of_i64 (Int64.of_int x))
   let add_unchecked = wrap_op2 C.i128_add
   let sub_unchecked = wrap_op2 C.i128_sub
   let mul_unchecked = wrap_op2 C.i128_mul
@@ -735,15 +735,15 @@ module I128_basic : Basic with type t = i128 = struct
       let max_i128_as_u128 = u128_of_i128 (C.i128_max ()) in
       function
       | U8 (_f, x) | U16 (_f, x) | I8 (_f, x) | I16 (_f, x) ->
-        Some (wrap (C.i128_of_i64_unchecked (Int64.of_int x)))
+        Some (wrap (C.i128_of_i64 (Int64.of_int x)))
       | U32 (_f, x) -> Some (wrap C.{ i128_high = 0L; i128_low = Int64.of_int32 x })
       | U64 (_f, x) -> Some (wrap C.{ i128_high = 0L; i128_low = x })
       | U128 (_f, x) ->
         if C.u128_compare x max_i128_as_u128 <= 0
         then Some (wrap (i128_of_u128 x))
         else None
-      | I32 (_f, x) -> Some (wrap (C.i128_of_i64_unchecked (Int64.of_int32 x)))
-      | I64 (_f, x) -> Some (wrap (C.i128_of_i64_unchecked x))
+      | I32 (_f, x) -> Some (wrap (C.i128_of_i64 (Int64.of_int32 x)))
+      | I64 (_f, x) -> Some (wrap (C.i128_of_i64 x))
       | I128 (_f, x) -> Some (wrap x)
   ;;
 end

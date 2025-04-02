@@ -214,8 +214,7 @@ X(i128)
 #undef X_OP2
 
 #define X(signedness, namespace)                                               \
-    value checked_oint_##signedness##128##_of_##namespace##_unchecked(         \
-        value x) {                                                             \
+    value checked_oint_##signedness##128##_of_##namespace(value x) {           \
         CAMLparam1(x);                                                         \
         CAMLreturn(signedness##128##_wrap(                                     \
             (C_INT_TY(namespace))C_VALUE(namespace, x)));                      \
