@@ -217,7 +217,7 @@ X(i128)
     value checked_oint_##signedness##128##_of_##namespace(value x) {           \
         CAMLparam1(x);                                                         \
         CAMLreturn(signedness##128##_wrap(                                     \
-            (C_INT_TY(namespace))C_VALUE(namespace, x)));                      \
+            (C_INT_TY(signedness##128))C_VALUE(namespace, x)));                \
     }
 
 X(u, u64)
