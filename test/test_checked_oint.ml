@@ -351,24 +351,22 @@ let generic_conversion () =
             Alcotest.check_raises (make_msg ~prefix:msg x) Out_of_range (fun () ->
               ignore (Destination.of_generic_exn (Source.to_generic x)))
         in
-        if not (Source.bits = 128 && Destination.(bits = 32 || bits = 64))
-        then (
-          check "Good" (Source.of_int_exn 0);
-          check "Good" (Source.of_int_exn 42);
-          if Source.is_signed && Destination.is_signed
-          then check "Good" (Source.of_int_exn (-42));
-          if
-            Source.bits > Destination.bits
-            || (Source.bits = Destination.bits
-                && (not Source.is_signed)
-                && Destination.is_signed)
-          then check_raises "Positive overflow" Source.max_int;
-          if
-            Source.is_signed
-            && (Source.bits > Destination.bits
-                || (Source.bits <= Destination.bits && not Destination.is_signed))
-          then check_raises "Negative overflow" Source.min_int;
-          ())))
+        check "Good" (Source.of_int_exn 0);
+        check "Good" (Source.of_int_exn 42);
+        if Source.is_signed && Destination.is_signed
+        then check "Good" (Source.of_int_exn (-42));
+        if
+          Source.bits > Destination.bits
+          || (Source.bits = Destination.bits
+              && (not Source.is_signed)
+              && Destination.is_signed)
+        then check_raises "Positive overflow" Source.max_int;
+        if
+          Source.is_signed
+          && (Source.bits > Destination.bits
+              || (Source.bits <= Destination.bits && not Destination.is_signed))
+        then check_raises "Negative overflow" Source.min_int;
+        ()))
 ;;
 
 let cases = ("Generic conversion", generic_conversion) :: cases

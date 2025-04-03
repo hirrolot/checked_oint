@@ -212,28 +212,3 @@ X(i128)
 #undef X
 #undef X_OP1
 #undef X_OP2
-
-#define X(signedness, namespace)                                               \
-    value checked_oint_##signedness##128##_of_##namespace(value x) {           \
-        CAMLparam1(x);                                                         \
-        CAMLreturn(signedness##128##_wrap(                                     \
-            (C_INT_TY(signedness##128))C_VALUE(namespace, x)));                \
-    }
-
-X(u, u64)
-X(i, i64)
-
-#undef X
-
-#define X(namespace)                                                           \
-    value checked_oint_i128_to_##namespace(value x) {                          \
-        CAMLparam1(x);                                                         \
-        CAMLreturn(                                                            \
-            OCAML_VALUE(namespace, (C_INT_TY(namespace))C_VALUE(i128, x)));    \
-    }
-
-X(int)
-X(i32)
-X(i64)
-
-#undef X
