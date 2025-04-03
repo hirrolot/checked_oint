@@ -27,7 +27,6 @@ module C = struct
   external u128_compare : u128 -> u128 -> int = "checked_oint_u128_compare" [@@noalloc]
   external u128_min : unit -> u128 = "checked_oint_u128_min"
   external u128_max : unit -> u128 = "checked_oint_u128_max"
-  external u128_of_int_unchecked : int -> u128 = "checked_oint_u128_of_int_unchecked"
   external u128_print : u128 -> string = "checked_oint_u128_print"
   external u128_scan_exn : string -> int -> u128 = "checked_oint_u128_scan_exn"
   external u128_add : u128 -> u128 -> u128 = "checked_oint_u128_add"
@@ -45,7 +44,6 @@ module C = struct
   external i128_compare : i128 -> i128 -> int = "checked_oint_i128_compare" [@@noalloc]
   external i128_min : unit -> i128 = "checked_oint_i128_min"
   external i128_max : unit -> i128 = "checked_oint_i128_max"
-  external i128_of_int_unchecked : int -> i128 = "checked_oint_i128_of_int_unchecked"
   external i128_print : i128 -> string = "checked_oint_i128_print"
   external i128_scan_exn : string -> int -> i128 = "checked_oint_i128_scan_exn"
   external i128_add : i128 -> i128 -> i128 = "checked_oint_i128_add"
@@ -61,6 +59,44 @@ module C = struct
   external i128_shift_right : i128 -> i128 -> i128 = "checked_oint_i128_shift_right"
 end
 [@@ocamlformat "module-item-spacing = compact"]
+
+(* Conversions to/from unsigned 128-bit integers. *)
+include struct
+  let u128_of_i128_unchecked C.{ i128_high; i128_low } =
+      C.{ u128_high = i128_high; u128_low = i128_low }
+  ;;
+
+  let u128_of_u64 x = C.{ u128_high = 0L; u128_low = x }
+
+  let u128_of_u32 x = u128_of_u64 (Int64.of_int32 x)
+end
+
+(* Conversions to/from signed 128-bit integers. *)
+include struct
+  let i128_of_u128_unchecked C.{ u128_high; u128_low } =
+      C.{ i128_high = u128_high; i128_low = u128_low }
+  ;;
+
+  let i128_of_u64 x = C.{ i128_high = 0L; i128_low = x }
+
+  let i128_of_u32 x = i128_of_u64 (Int64.of_int32 x)
+
+  let i128_of_i64 x =
+      if x >= 0L then i128_of_u64 x else C.{ i128_high = -1L; i128_low = x }
+  ;;
+
+  let i128_of_i32 x = i128_of_i64 (Int64.of_int32 x)
+
+  let i128_to_i64_unchecked C.{ i128_high; i128_low } =
+      if i128_high = 0L
+      then i128_low
+      else if i128_high = -1L
+      then i128_low
+      else failwith "Impossible" [@coverage off]
+  ;;
+
+  let i128_to_i32_unchecked x = Int64.to_int32 (i128_to_i64_unchecked x)
+end
 
 exception Out_of_range
 
@@ -240,6 +276,7 @@ module type Basic = sig
   val of_int : int -> t option
   val of_string : string -> t option
   val to_generic : t -> generic
+  val of_generic : generic -> t option
 end
 [@@ocamlformat "module-item-spacing = compact"]
 
@@ -261,6 +298,7 @@ let determine_base s =
     10, s
 ;;
 
+(* This module is designed only for 8- and 16-bit integers (signed or unsigned). *)
 module Inherit_int_basic (S : sig
     val min_int : int_wrapper
     val max_int : int_wrapper
@@ -288,6 +326,43 @@ struct
       | exception Failure _s -> None
       | n when n < unwrap S.min_int || n > unwrap S.max_int -> None
       | n -> Some (wrap n)
+  ;;
+
+  let of_generic : generic -> int_wrapper option =
+      let min_value, max_value = unwrap S.min_int, unwrap S.max_int in
+      function
+      | U8 (_f, x) | U16 (_f, x) | I8 (_f, x) | I16 (_f, x) ->
+        if x >= min_value && x <= max_value then Some (wrap x) else None
+      | U32 (_f, x) ->
+        let open Int32 in
+        if unsigned_compare x (of_int max_value) <= 0
+        then Some (wrap (to_int x))
+        else None
+      | U64 (_f, x) ->
+        let open Int64 in
+        if unsigned_compare x (of_int max_value) <= 0
+        then Some (wrap (to_int x))
+        else None
+      | I32 (_f, x) ->
+        let open Int32 in
+        if x >= of_int min_value && x <= of_int max_value
+        then Some (wrap (to_int x))
+        else None
+      | I64 (_f, x) ->
+        let open Int64 in
+        if x >= of_int min_value && x <= of_int max_value
+        then Some (wrap (to_int x))
+        else None
+      | U128 (_f, x) ->
+        if C.u128_compare x (u128_of_u64 (Int64.of_int max_value)) <= 0
+        then Some (wrap (Int64.to_int x.u128_low))
+        else None
+      | I128 (_f, x) ->
+        if
+          C.i128_compare x (i128_of_i64 (Int64.of_int min_value)) >= 0
+          && C.i128_compare x (i128_of_i64 (Int64.of_int max_value)) <= 0
+        then Some (wrap (Int64.to_int (i128_to_i64_unchecked x)))
+        else None
   ;;
 end
 [@@ocamlformat "module-item-spacing = compact"]
@@ -364,6 +439,33 @@ module U32_basic : Basic with type t = u32 = struct
   ;;
 
   let to_generic x = U32 x [@@coverage off]
+
+  let of_generic =
+      let max_u32_as_i64 = 0xFFFFFFFFL in
+      function
+      | U8 (_f, x) | U16 (_f, x) -> Some (wrap (Int32.of_int x))
+      | U32 (_f, x) -> Some (wrap x)
+      | U64 (_f, x) ->
+        if Int64.unsigned_compare x max_u32_as_i64 <= 0
+        then Some (wrap (Int64.to_int32 x))
+        else None
+      | U128 (_f, x) ->
+        if C.u128_compare x (u128_of_u64 max_u32_as_i64) <= 0
+        then Some (wrap (Int64.to_int32 x.u128_low))
+        else None
+      | I8 (_f, x) | I16 (_f, x) -> if x >= 0 then Some (wrap (Int32.of_int x)) else None
+      | I32 (_f, x) -> if Int32.(compare x zero >= 0) then Some (wrap x) else None
+      | I64 (_f, x) ->
+        if Int64.(compare x zero >= 0 && compare x max_u32_as_i64 <= 0)
+        then Some (wrap (Int64.to_int32 x))
+        else None
+      | I128 (_f, x) ->
+        if
+          C.i128_compare x (i128_of_i64 0L) >= 0
+          && C.i128_compare x (i128_of_i64 max_u32_as_i64) <= 0
+        then Some (wrap (Int64.to_int32 x.i128_low))
+        else None
+  ;;
 end
 [@@ocamlformat "module-item-spacing = compact"]
 
@@ -398,6 +500,28 @@ module U64_basic : Basic with type t = u64 = struct
   ;;
 
   let to_generic x = U64 x [@@coverage off]
+
+  let of_generic =
+      let max_u64_as_i64 = Int64.minus_one in
+      function
+      | U8 (_f, x) | U16 (_f, x) -> Some (wrap (Int64.of_int x))
+      | U32 (_f, x) -> Some (wrap (Int64.of_int32 x))
+      | U64 (_f, x) -> Some (wrap x)
+      | U128 (_f, x) ->
+        if C.u128_compare x (u128_of_u64 max_u64_as_i64) <= 0
+        then Some (wrap x.u128_low)
+        else None
+      | I8 (_f, x) | I16 (_f, x) -> if x >= 0 then Some (wrap (Int64.of_int x)) else None
+      | I32 (_f, x) ->
+        if Int32.(compare x zero >= 0) then Some (wrap (Int64.of_int32 x)) else None
+      | I64 (_f, x) -> if Int64.(compare x zero >= 0) then Some (wrap x) else None
+      | I128 (_f, x) ->
+        if
+          C.i128_compare x (i128_of_i64 0L) >= 0
+          && C.i128_compare x (i128_of_u64 max_u64_as_i64) <= 0
+        then Some (wrap x.i128_low)
+        else None
+  ;;
 end
 [@@ocamlformat "module-item-spacing = compact"]
 
@@ -407,7 +531,7 @@ module U128_basic : Basic with type t = u128 = struct
   let bits = 128
   let min_int = wrap (C.u128_min ())
   let max_int = wrap (C.u128_max ())
-  let of_int_unchecked x = wrap (C.u128_of_int_unchecked x)
+  let of_int_unchecked x = wrap (u128_of_u64 (Int64.of_int x))
   let add_unchecked = wrap_op2 C.u128_add
   let sub_unchecked = wrap_op2 C.u128_sub
   let mul_unchecked = wrap_op2 C.u128_mul
@@ -428,6 +552,23 @@ module U128_basic : Basic with type t = u128 = struct
   ;;
 
   let to_generic x = U128 x [@@coverage off]
+
+  let of_generic = function
+    | U8 (_f, x) | U16 (_f, x) -> Some (wrap (u128_of_u64 (Int64.of_int x)))
+    | U32 (_f, x) -> Some (wrap (u128_of_u32 x))
+    | U64 (_f, x) -> Some (wrap (u128_of_u64 x))
+    | U128 (_f, x) -> Some (wrap x)
+    | I8 (_f, x) | I16 (_f, x) ->
+      if x >= 0 then Some (wrap (u128_of_u64 (Int64.of_int x))) else None
+    | I32 (_f, x) ->
+      if Int32.(compare x zero >= 0) then Some (wrap (u128_of_u32 x)) else None
+    | I64 (_f, x) ->
+      if Int64.(compare x zero >= 0) then Some (wrap (u128_of_u64 x)) else None
+    | I128 (_f, x) ->
+      if C.(i128_compare x (i128_of_i64 0L) >= 0)
+      then Some (wrap (u128_of_i128_unchecked x))
+      else None
+  ;;
 end
 [@@ocamlformat "module-item-spacing = compact"]
 
@@ -502,6 +643,36 @@ module I32_basic : Basic with type t = i32 = struct
   ;;
 
   let to_generic x = I32 x [@@coverage off]
+
+  let of_generic =
+      let min_i32_as_i64, max_i32_as_i64 =
+          Int64.(of_int32 Int32.min_int, of_int32 Int32.max_int)
+      in
+      function
+      | U8 (_f, x) | U16 (_f, x) | I8 (_f, x) | I16 (_f, x) ->
+        Some (wrap (Int32.of_int x))
+      | U32 (_f, x) ->
+        if Int32.(unsigned_compare x max_int <= 0) then Some (wrap x) else None
+      | U64 (_f, x) ->
+        if Int64.unsigned_compare x max_i32_as_i64 <= 0
+        then Some (wrap (Int64.to_int32 x))
+        else None
+      | U128 (_f, x) ->
+        if C.u128_compare x (u128_of_u64 max_i32_as_i64) <= 0
+        then Some (wrap (Int64.to_int32 x.u128_low))
+        else None
+      | I32 (_f, x) -> Some (wrap x)
+      | I64 (_f, x) ->
+        if Int64.(compare x min_i32_as_i64 >= 0 && compare x max_i32_as_i64 <= 0)
+        then Some (wrap (Int64.to_int32 x))
+        else None
+      | I128 (_f, x) ->
+        if
+          C.i128_compare x (i128_of_i64 min_i32_as_i64) >= 0
+          && C.i128_compare x (i128_of_i64 max_i32_as_i64) <= 0
+        then Some (wrap (i128_to_i32_unchecked x))
+        else None
+  ;;
 end
 [@@ocamlformat "module-item-spacing = compact"]
 
@@ -532,6 +703,24 @@ module I64_basic : Basic with type t = i64 = struct
   ;;
 
   let to_generic x = I64 x [@@coverage off]
+
+  let of_generic = function
+    | U8 (_f, x) | U16 (_f, x) | I8 (_f, x) | I16 (_f, x) -> Some (wrap (Int64.of_int x))
+    | U32 (_f, x) | I32 (_f, x) -> Some (wrap (Int64.of_int32 x))
+    | U64 (_f, x) ->
+      if Int64.(unsigned_compare x max_int <= 0) then Some (wrap x) else None
+    | U128 (_f, x) ->
+      if C.u128_compare x (u128_of_u64 Int64.max_int) <= 0
+      then Some (wrap x.u128_low)
+      else None
+    | I64 (_f, x) -> Some (wrap x)
+    | I128 (_f, x) ->
+      if
+        C.i128_compare x (i128_of_i64 Int64.min_int) >= 0
+        && C.i128_compare x (i128_of_i64 Int64.max_int) <= 0
+      then Some (wrap (i128_to_i64_unchecked x))
+      else None
+  ;;
 end
 [@@ocamlformat "module-item-spacing = compact"]
 
@@ -541,7 +730,7 @@ module I128_basic : Basic with type t = i128 = struct
   let bits = 128
   let min_int = wrap (C.i128_min ())
   let max_int = wrap (C.i128_max ())
-  let of_int_unchecked x = wrap (C.i128_of_int_unchecked x)
+  let of_int_unchecked x = wrap (i128_of_i64 (Int64.of_int x))
   let add_unchecked = wrap_op2 C.i128_add
   let sub_unchecked = wrap_op2 C.i128_sub
   let mul_unchecked = wrap_op2 C.i128_mul
@@ -562,6 +751,22 @@ module I128_basic : Basic with type t = i128 = struct
   ;;
 
   let to_generic x = I128 x [@@coverage off]
+
+  let of_generic =
+      let max_i128_as_u128 = u128_of_i128_unchecked (C.i128_max ()) in
+      function
+      | U8 (_f, x) | U16 (_f, x) | I8 (_f, x) | I16 (_f, x) ->
+        Some (wrap (i128_of_i64 (Int64.of_int x)))
+      | U32 (_f, x) -> Some (wrap (i128_of_u32 x))
+      | U64 (_f, x) -> Some (wrap (i128_of_u64 x))
+      | U128 (_f, x) ->
+        if C.u128_compare x max_i128_as_u128 <= 0
+        then Some (wrap (i128_of_u128_unchecked x))
+        else None
+      | I32 (_f, x) -> Some (wrap (i128_of_i32 x))
+      | I64 (_f, x) -> Some (wrap (i128_of_i64 x))
+      | I128 (_f, x) -> Some (wrap x)
+  ;;
 end
 [@@ocamlformat "module-item-spacing = compact"]
 
@@ -609,6 +814,8 @@ module type S = sig
   val shift_left_exn : t -> t -> t
   val shift_right_exn : t -> t -> t
   val to_string : t -> string
+  val of_generic : generic -> t option
+  val of_generic_exn : generic -> t
   val to_generic : t -> generic
 end
 [@@ocamlformat "module-item-spacing = compact"]
@@ -751,6 +958,12 @@ module Make (S : Basic) : S with type t = S.t = struct
       , check rem
       , check shift_left
       , check shift_right )
+  ;;
+
+  let of_generic_exn x =
+      match of_generic x with
+      | Some y -> y
+      | None -> raise Out_of_range
   ;;
 
   let to_string = show

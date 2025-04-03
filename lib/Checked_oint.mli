@@ -248,6 +248,12 @@ module type S = sig
   (** Prints a value in decimal; same as {!show}. *)
   val to_string : t -> string
 
+  (** Constructs a value out of {!generic}; returns [None] on overflow/underflow. *)
+  val of_generic : generic -> t option
+
+  (** Same as {!of_generic} but raises {!Out_of_range} instead of returning [None]. *)
+  val of_generic_exn : generic -> t
+
   (** Casts a value into {!generic}. *)
   val to_generic : t -> generic
 end

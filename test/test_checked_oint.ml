@@ -4,6 +4,10 @@ let check_bool msg (actual, expected) = Alcotest.(check' bool) ~msg ~actual ~exp
 
 let check_string msg (actual, expected) = Alcotest.(check' string) ~msg ~actual ~expected
 
+let check_generic msg (actual, expected) =
+    Alcotest.(check' (testable pp_generic equal_generic)) ~msg ~actual ~expected
+;;
+
 let int_modules_list = List.map ops all_of_int_ty
 
 let limits =
@@ -266,7 +270,7 @@ let show_and_parse_ints () =
 let cases = ("Show & parse integers", show_and_parse_ints) :: cases
 
 let parse_errors () =
-    let cause_overflow s = String.sub s 0 (String.length s - 1) ^ "9" in
+    let cause_overflow s = String.(sub s 0 (length s - 1)) ^ "9" in
     List.iter2
       (fun (min_int_s, max_int_s) (module S : S) ->
          let check_raises msg s =
@@ -308,6 +312,64 @@ let split_int_128 () =
 ;;
 
 let cases = ("Split 128-bit integers", split_int_128) :: cases
+
+let identity_conversion () =
+    int_modules_list
+    |> List.iter (fun (module S : S) ->
+      let x = S.(to_generic (of_int_exn 42)) in
+      check_generic "Identity conversion" S.(to_generic (of_generic_exn x), x))
+;;
+
+let cases = ("Identity conversion", identity_conversion) :: cases
+
+let generic_conversion () =
+    int_modules_list
+    |> List.iter (fun (module Source : S) ->
+      int_modules_list
+      |> List.iter (fun (module Destination : S) ->
+        let make_msg ~prefix x =
+            let signedness = function
+              | true -> 'i'
+              | false -> 'u'
+            in
+            Printf.sprintf
+              "%s: %c%d -> %c%d: %s"
+              prefix
+              (signedness Source.is_signed)
+              Source.bits
+              (signedness Destination.is_signed)
+              Destination.bits
+              (Source.to_string x)
+        in
+        let check msg x =
+            check_string
+              (make_msg ~prefix:msg x)
+              ( Destination.(to_string (of_generic_exn (Source.to_generic x)))
+              , Source.to_string x )
+        in
+        let check_raises msg x =
+            Alcotest.check_raises (make_msg ~prefix:msg x) Out_of_range (fun () ->
+              ignore (Destination.of_generic_exn (Source.to_generic x)))
+        in
+        check "Good" (Source.of_int_exn 0);
+        check "Good" (Source.of_int_exn 42);
+        if Source.is_signed && Destination.is_signed
+        then check "Good" (Source.of_int_exn (-42));
+        if
+          Source.bits > Destination.bits
+          || (Source.bits = Destination.bits
+              && (not Source.is_signed)
+              && Destination.is_signed)
+        then check_raises "Positive overflow" Source.max_int;
+        if
+          Source.is_signed
+          && (Source.bits > Destination.bits
+              || (Source.bits <= Destination.bits && not Destination.is_signed))
+        then check_raises "Negative overflow" Source.min_int;
+        ()))
+;;
+
+let cases = ("Generic conversion", generic_conversion) :: cases
 
 let cases =
     cases |> List.rev |> List.map (fun (name, f) -> Alcotest.test_case name `Quick f)

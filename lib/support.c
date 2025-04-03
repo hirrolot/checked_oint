@@ -159,11 +159,6 @@ X(i64)
         CAMLreturn(namespace##_wrap(C_INT_MAX(namespace)));                    \
     }                                                                          \
                                                                                \
-    value checked_oint_##namespace##_of_int_unchecked(value x) {               \
-        CAMLparam1(x);                                                         \
-        CAMLreturn(namespace##_wrap((C_INT_TY(namespace))Int_val(x)));         \
-    }                                                                          \
-                                                                               \
     value checked_oint_##namespace##_print(value x) {                          \
         CAMLparam1(x);                                                         \
                                                                                \
