@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## unreleased
 
+## 0.5.0 - 2025-04-07
+
 ### Added
 
  - `S.of_generic` and `S.of_generic_exn` to convert between any two integer types.
