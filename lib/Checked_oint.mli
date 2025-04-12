@@ -70,21 +70,23 @@ type bitness =
 type int_ty = signedness * bitness [@@deriving eq, show, enumerate]
 
 module Int_ty : sig
-  val u8 : int_ty
-  val u16 : int_ty
-  val u32 : int_ty
-  val u64 : int_ty
-  val u128 : int_ty
-  val i8 : int_ty
-  val i16 : int_ty
-  val i32 : int_ty
-  val i64 : int_ty
-  val i128 : int_ty
+  type t = int_ty [@@deriving eq, show, enumerate]
+
+  val u8 : t
+  val u16 : t
+  val u32 : t
+  val u64 : t
+  val u128 : t
+  val i8 : t
+  val i16 : t
+  val i32 : t
+  val i64 : t
+  val i128 : t
+
+  (** Determines the type representation of a generic integer. *)
+  val of_generic : generic -> t
 end
 [@@ocamlformat "module-item-spacing = compact"]
-
-(** Determines the type representation of a generic integer. *)
-val generic_int_ty : generic -> int_ty
 
 (** [true] if the integer is 0, [false] otherwise. *)
 val is_zero : generic -> bool

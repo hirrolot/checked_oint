@@ -228,31 +228,33 @@ type bitness =
 type int_ty = signedness * bitness [@@deriving eq, show, enumerate]
 
 module Int_ty = struct
-  let u8 : int_ty = Unsigned, Bits8
-  let u16 : int_ty = Unsigned, Bits16
-  let u32 : int_ty = Unsigned, Bits32
-  let u64 : int_ty = Unsigned, Bits64
-  let u128 : int_ty = Unsigned, Bits128
-  let i8 : int_ty = Signed, Bits8
-  let i16 : int_ty = Signed, Bits16
-  let i32 : int_ty = Signed, Bits32
-  let i64 : int_ty = Signed, Bits64
-  let i128 : int_ty = Signed, Bits128
+  type t = int_ty [@@deriving eq, show, enumerate]
+
+  let u8 : t = Unsigned, Bits8
+  let u16 : t = Unsigned, Bits16
+  let u32 : t = Unsigned, Bits32
+  let u64 : t = Unsigned, Bits64
+  let u128 : t = Unsigned, Bits128
+  let i8 : t = Signed, Bits8
+  let i16 : t = Signed, Bits16
+  let i32 : t = Signed, Bits32
+  let i64 : t = Signed, Bits64
+  let i128 : t = Signed, Bits128
+
+  let of_generic = function
+    | U8 _ -> Unsigned, Bits8
+    | U16 _ -> Unsigned, Bits16
+    | U32 _ -> Unsigned, Bits32
+    | U64 _ -> Unsigned, Bits64
+    | U128 _ -> Unsigned, Bits128
+    | I8 _ -> Signed, Bits8
+    | I16 _ -> Signed, Bits16
+    | I32 _ -> Signed, Bits32
+    | I64 _ -> Signed, Bits64
+    | I128 _ -> Signed, Bits128
+  ;;
 end
 [@@ocamlformat "module-item-spacing = compact"]
-
-let generic_int_ty = function
-  | U8 _ -> Unsigned, Bits8
-  | U16 _ -> Unsigned, Bits16
-  | U32 _ -> Unsigned, Bits32
-  | U64 _ -> Unsigned, Bits64
-  | U128 _ -> Unsigned, Bits128
-  | I8 _ -> Signed, Bits8
-  | I16 _ -> Signed, Bits16
-  | I32 _ -> Signed, Bits32
-  | I64 _ -> Signed, Bits64
-  | I128 _ -> Signed, Bits128
-;;
 
 [@@@coverage on]
 
@@ -827,7 +829,7 @@ module Make (S : Basic) : S with type t = S.t = struct
   include S
   open S
 
-  let int_ty = generic_int_ty (to_generic (of_int_unchecked 0))
+  let int_ty = Int_ty.of_generic (to_generic (of_int_unchecked 0))
 
   let zero, one = of_int_unchecked 0, of_int_unchecked 1
 

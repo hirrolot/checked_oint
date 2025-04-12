@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
  - Put all the integer type shortcuts into the new `Int_ty` module.
+ - The `generic_int_ty` function is now available as `Int_ty.(of_generic : generic -> t)`.
 
 ## 0.5.0 - 2025-04-07
 
