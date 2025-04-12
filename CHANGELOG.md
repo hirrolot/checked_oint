@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## unreleased
 
+### Changed
+
+ - Put all the integer type shortcuts into the new `Int_ty` module.
+
 ## 0.5.0 - 2025-04-07
 
 ### Added

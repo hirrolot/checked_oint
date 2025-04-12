@@ -227,18 +227,19 @@ type bitness =
 
 type int_ty = signedness * bitness [@@deriving eq, show, enumerate]
 
-include struct
-  let u8_int_ty : int_ty = Unsigned, Bits8
-  let u16_int_ty : int_ty = Unsigned, Bits16
-  let u32_int_ty : int_ty = Unsigned, Bits32
-  let u64_int_ty : int_ty = Unsigned, Bits64
-  let u128_int_ty : int_ty = Unsigned, Bits128
-  let i8_int_ty : int_ty = Signed, Bits8
-  let i16_int_ty : int_ty = Signed, Bits16
-  let i32_int_ty : int_ty = Signed, Bits32
-  let i64_int_ty : int_ty = Signed, Bits64
-  let i128_int_ty : int_ty = Signed, Bits128
-end [@@ocamlformat "module-item-spacing = compact"]
+module Int_ty = struct
+  let u8 : int_ty = Unsigned, Bits8
+  let u16 : int_ty = Unsigned, Bits16
+  let u32 : int_ty = Unsigned, Bits32
+  let u64 : int_ty = Unsigned, Bits64
+  let u128 : int_ty = Unsigned, Bits128
+  let i8 : int_ty = Signed, Bits8
+  let i16 : int_ty = Signed, Bits16
+  let i32 : int_ty = Signed, Bits32
+  let i64 : int_ty = Signed, Bits64
+  let i128 : int_ty = Signed, Bits128
+end
+[@@ocamlformat "module-item-spacing = compact"]
 
 let generic_int_ty = function
   | U8 _ -> Unsigned, Bits8

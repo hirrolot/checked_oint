@@ -69,17 +69,17 @@ type bitness =
 (** Represents an integer type. *)
 type int_ty = signedness * bitness [@@deriving eq, show, enumerate]
 
-include sig
-  val u8_int_ty : int_ty
-  val u16_int_ty : int_ty
-  val u32_int_ty : int_ty
-  val u64_int_ty : int_ty
-  val u128_int_ty : int_ty
-  val i8_int_ty : int_ty
-  val i16_int_ty : int_ty
-  val i32_int_ty : int_ty
-  val i64_int_ty : int_ty
-  val i128_int_ty : int_ty
+module Int_ty : sig
+  val u8 : int_ty
+  val u16 : int_ty
+  val u32 : int_ty
+  val u64 : int_ty
+  val u128 : int_ty
+  val i8 : int_ty
+  val i16 : int_ty
+  val i32 : int_ty
+  val i64 : int_ty
+  val i128 : int_ty
 end
 [@@ocamlformat "module-item-spacing = compact"]
 
