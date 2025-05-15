@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## unreleased
 
+## 1.0.0 - 2025-05-15
+
+### Changed
+
+ - Relicense the project under the [Unlicense license](https://opensource.org/license/unlicense).
+
 ## 0.6.0 - 2025-04-12
 
 ### Changed
