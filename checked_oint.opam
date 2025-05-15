@@ -4,7 +4,7 @@ version: "0.6.0"
 synopsis: "An OCaml library for checked integer arithmetic"
 maintainer: ["hirrolot <hirrolot@gmail.com>"]
 authors: ["hirrolot <hirrolot@gmail.com>"]
-license: "MIT"
+license: "Unlicense"
 homepage: "https://github.com/hirrolot/checked_oint"
 bug-reports: "https://github.com/hirrolot/checked_oint/issues"
 depends: [

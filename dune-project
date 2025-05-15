@@ -13,7 +13,7 @@
 
 (maintainers "hirrolot <hirrolot@gmail.com>")
 
-(license MIT)
+(license Unlicense)
 
 (package
  (name checked_oint)
