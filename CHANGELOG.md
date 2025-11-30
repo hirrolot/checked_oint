@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## unreleased
 
+### Changed
+
+ - Only require `bisect_ppx` and `alcotest` for testing, not for production builds.
+
 ## 1.0.0 - 2025-05-15
 
 ### Changed

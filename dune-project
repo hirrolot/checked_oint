@@ -24,6 +24,8 @@
   dune
   ppx_deriving
   ppx_enumerate
-  bisect_ppx
+  (bisect_ppx :with-test)
   (alcotest
-   (>= 1.7.0))))
+   (and
+    :with-test
+    (>= 1.7.0)))))
