@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## unreleased
 
+## 2.0.0 - 2026-06-10
+
 ### Added
 
  - `S.ty` as the type representation of `S.t`.
