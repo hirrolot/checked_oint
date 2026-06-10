@@ -37,65 +37,45 @@ type i64 [@@deriving eq, show, ord]
 (** A signed 128-bit integer. *)
 type i128 [@@deriving eq, show, ord]
 
-(** A type that can hold any fixed-width integer. *)
-type generic =
-  | U8 of u8
-  | U16 of u16
-  | U32 of u32
-  | U64 of u64
-  | U128 of u128
-  | I8 of i8
-  | I16 of i16
-  | I32 of i32
-  | I64 of i64
-  | I128 of i128
-[@@deriving eq, show]
-
-(** Represents integer signedness. *)
-type signedness =
-  | Unsigned
-  | Signed
-[@@deriving eq, show, enumerate]
-
-(** Represents integer bitness. *)
-type bitness =
-  | Bits8
-  | Bits16
-  | Bits32
-  | Bits64
-  | Bits128
-[@@deriving eq, show, enumerate]
-
-(** Represents an integer type. *)
-type int_ty = signedness * bitness [@@deriving eq, show, enumerate]
-
+(** Represents a materialized integer type. *)
 module Int_ty : sig
-  type t = int_ty [@@deriving eq, show, enumerate]
+  type _ t =
+    | U8 : u8 t
+    | U16 : u16 t
+    | U32 : u32 t
+    | U64 : u64 t
+    | U128 : u128 t
+    | I8 : i8 t
+    | I16 : i16 t
+    | I32 : i32 t
+    | I64 : i64 t
+    | I128 : i128 t
 
-  val u8 : t
-  val u16 : t
-  val u32 : t
-  val u64 : t
-  val u128 : t
-  val i8 : t
-  val i16 : t
-  val i32 : t
-  val i64 : t
-  val i128 : t
+  (** A witness of type equality. *)
+  type (_, _) eq = Eq : ('a, 'a) eq
 
-  (** Determines the type representation of a generic integer. *)
-  val of_generic : generic -> t
+  (** Determines whether two integer types are the same. *)
+  val equate : 'a t * 'b t -> ('a, 'b) eq option
+
+  (** An integer type whose OCaml representation is unknown. *)
+  type container = Container : _ t -> container
+
+  (** The list of all integer types. *)
+  val all : container list
 end
 [@@ocamlformat "module-item-spacing = compact"]
 
+(** An integer of an arbitrary type. *)
+type value = Value : 'a Int_ty.t * 'a -> value [@@deriving eq, show]
+
 (** [true] if the integer is 0, [false] otherwise. *)
-val is_zero : generic -> bool
+val is_zero : value -> bool
 
 (** [true] if the integer is 1, [false] otherwise. *)
-val is_one : generic -> bool
+val is_one : value -> bool
 
 (** [true] if the integer has all bits set to 1, [false] otherwise. *)
-val is_all_ones : generic -> bool
+val is_all_ones : value -> bool
 
 (** The signature of operations on integers. *)
 module type S = sig
@@ -109,11 +89,11 @@ module type S = sig
       and {!compare} instead. *)
   type t [@@deriving eq, show, ord]
 
+  (** The type representation. *)
+  val ty : t Int_ty.t
+
   (** The number of bits of this integer type. *)
   val bits : int
-
-  (** The type representation. *)
-  val int_ty : int_ty
 
   (** The value of 0. *)
   val zero : t
@@ -250,14 +230,14 @@ module type S = sig
   (** Prints a value in decimal; same as {!show}. *)
   val to_string : t -> string
 
-  (** Constructs a value out of {!generic}; returns [None] on overflow/underflow. *)
-  val of_generic : generic -> t option
+  (** Constructs an integer out of {!value}; returns [None] on overflow/underflow. *)
+  val of_value : value -> t option
 
-  (** Same as {!of_generic} but raises {!Out_of_range} instead of returning [None]. *)
-  val of_generic_exn : generic -> t
+  (** Same as {!of_value} but raises {!Out_of_range} instead of returning [None]. *)
+  val of_value_exn : value -> t
 
-  (** Casts a value into {!generic}. *)
-  val to_generic : t -> generic
+  (** Casts an integer into {!value}. *)
+  val to_value : t -> value
 end
 
 (** The implementation of {!u8}. *)
@@ -307,40 +287,4 @@ module I128 : sig
 end
 
 (** Finds an integer implementation based on its type representation. *)
-val ops : int_ty -> (module S)
-
-(** A single integer of an arbitrary type.
-
-    This module is useful for typed manipulation of an integer value, which can belong to
-    any integer type. A first-class instance of this module can be obtained by calling
-    {!singleton} with a {!generic} integer. *)
-module type Singleton = sig
-  type t
-
-  include S with type t := t
-
-  val value : t
-end
-
-(** Constructs an integer singleton. *)
-val singleton : generic -> (module Singleton)
-
-(** A pair of integers of an arbitrary type.
-
-    This module is useful for typed manipulation of an arbitrary pair of integers,
-    provided that they belong to the same type. A first-class instance of this module can
-    be obtained by calling {!pair}/{!pair_exn} with a pair of {!generic}s. *)
-module type Pair = sig
-  type t
-
-  include S with type t := t
-
-  val value : t * t
-end
-
-(** Constructs a pair of integers; returns [None] if a provided pair of generic integers
-    are not of the same tag. *)
-val pair : generic * generic -> (module Pair) option
-
-(** Same as {!pair} but raises [Invalid_argument] instead of returning [None]. *)
-val pair_exn : generic * generic -> (module Pair)
+val ops : 'a Int_ty.t -> (module S with type t = 'a)

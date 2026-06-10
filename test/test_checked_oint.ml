@@ -4,22 +4,24 @@ let check_bool msg (actual, expected) = Alcotest.(check' bool) ~msg ~actual ~exp
 
 let check_string msg (actual, expected) = Alcotest.(check' string) ~msg ~actual ~expected
 
-let check_generic msg (actual, expected) =
-    Alcotest.(check' (testable pp_generic equal_generic)) ~msg ~actual ~expected
+let check_value msg (actual, expected) =
+    Alcotest.(check' (testable pp_value equal_value)) ~msg ~actual ~expected
 ;;
 
-let int_modules_list = List.map ops all_of_int_ty
+let int_modules_list =
+    Int_ty.all |> List.map (function Int_ty.Container ty -> (module (val ops ty) : S))
+;;
 
 let limits =
     [ "0", "255"
-    ; "-128", "127"
     ; "0", "65535"
-    ; "-32768", "32767"
     ; "0", "4294967295"
-    ; "-2147483648", "2147483647"
     ; "0", "18446744073709551615"
-    ; "-9223372036854775808", "9223372036854775807"
     ; "0", "340282366920938463463374607431768211455"
+    ; "-128", "127"
+    ; "-32768", "32767"
+    ; "-2147483648", "2147483647"
+    ; "-9223372036854775808", "9223372036854775807"
     ; ( "-170141183460469231731687303715884105728"
       , "170141183460469231731687303715884105727" )
     ]
@@ -316,13 +318,13 @@ let cases = ("Split 128-bit integers", split_int_128) :: cases
 let identity_conversion () =
     int_modules_list
     |> List.iter (fun (module S : S) ->
-      let x = S.(to_generic (of_int_exn 42)) in
-      check_generic "Identity conversion" S.(to_generic (of_generic_exn x), x))
+      let x = S.(to_value (of_int_exn 42)) in
+      check_value "Identity conversion" S.(to_value (of_value_exn x), x))
 ;;
 
 let cases = ("Identity conversion", identity_conversion) :: cases
 
-let generic_conversion () =
+let value_conversion () =
     int_modules_list
     |> List.iter (fun (module Source : S) ->
       int_modules_list
@@ -344,12 +346,12 @@ let generic_conversion () =
         let check msg x =
             check_string
               (make_msg ~prefix:msg x)
-              ( Destination.(to_string (of_generic_exn (Source.to_generic x)))
+              ( Destination.(to_string (of_value_exn (Source.to_value x)))
               , Source.to_string x )
         in
         let check_raises msg x =
             Alcotest.check_raises (make_msg ~prefix:msg x) Out_of_range (fun () ->
-              ignore (Destination.of_generic_exn (Source.to_generic x)))
+              ignore (Destination.of_value_exn (Source.to_value x)))
         in
         check "Good" (Source.of_int_exn 0);
         check "Good" (Source.of_int_exn 42);
@@ -369,7 +371,7 @@ let generic_conversion () =
         ()))
 ;;
 
-let cases = ("Generic conversion", generic_conversion) :: cases
+let cases = ("Value conversion", value_conversion) :: cases
 
 let cases =
     cases |> List.rev |> List.map (fun (name, f) -> Alcotest.test_case name `Quick f)

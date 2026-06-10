@@ -199,68 +199,52 @@ type i128 = i128_wrapper [@@deriving eq, show, ord]
 
 [@@@coverage off]
 
-type generic =
-  | U8 of u8
-  | U16 of u16
-  | U32 of u32
-  | U64 of u64
-  | U128 of u128
-  | I8 of i8
-  | I16 of i16
-  | I32 of i32
-  | I64 of i64
-  | I128 of i128
-[@@deriving eq, show]
-
-type signedness =
-  | Unsigned
-  | Signed
-[@@deriving eq, show, enumerate]
-
-type bitness =
-  | Bits8
-  | Bits16
-  | Bits32
-  | Bits64
-  | Bits128
-[@@deriving eq, show, enumerate]
-
-type int_ty = signedness * bitness [@@deriving eq, show, enumerate]
-
 module Int_ty = struct
-  type t = int_ty [@@deriving eq, show, enumerate]
+  type _ t =
+    | U8 : u8 t
+    | U16 : u16 t
+    | U32 : u32 t
+    | U64 : u64 t
+    | U128 : u128 t
+    | I8 : i8 t
+    | I16 : i16 t
+    | I32 : i32 t
+    | I64 : i64 t
+    | I128 : i128 t
 
-  let u8 : t = Unsigned, Bits8
-  let u16 : t = Unsigned, Bits16
-  let u32 : t = Unsigned, Bits32
-  let u64 : t = Unsigned, Bits64
-  let u128 : t = Unsigned, Bits128
-  let i8 : t = Signed, Bits8
-  let i16 : t = Signed, Bits16
-  let i32 : t = Signed, Bits32
-  let i64 : t = Signed, Bits64
-  let i128 : t = Signed, Bits128
+  type (_, _) eq = Eq : ('a, 'a) eq
 
-  let of_generic = function
-    | U8 _ -> Unsigned, Bits8
-    | U16 _ -> Unsigned, Bits16
-    | U32 _ -> Unsigned, Bits32
-    | U64 _ -> Unsigned, Bits64
-    | U128 _ -> Unsigned, Bits128
-    | I8 _ -> Signed, Bits8
-    | I16 _ -> Signed, Bits16
-    | I32 _ -> Signed, Bits32
-    | I64 _ -> Signed, Bits64
-    | I128 _ -> Signed, Bits128
+  let equate : type a b. a t * b t -> (a, b) eq option = function
+    | U8, U8 -> Some Eq
+    | U16, U16 -> Some Eq
+    | U32, U32 -> Some Eq
+    | U64, U64 -> Some Eq
+    | U128, U128 -> Some Eq
+    | I8, I8 -> Some Eq
+    | I16, I16 -> Some Eq
+    | I32, I32 -> Some Eq
+    | I64, I64 -> Some Eq
+    | I128, I128 -> Some Eq
+    | _, _ -> None
+  ;;
+
+  type container = Container : _ t -> container
+
+  let all =
+      [ Container U8; Container U16; Container U32; Container U64; Container U128 ]
+      @ [ Container I8; Container I16; Container I32; Container I64; Container I128 ]
   ;;
 end
 [@@ocamlformat "module-item-spacing = compact"]
 
 [@@@coverage on]
 
+type value = Value : 'a Int_ty.t * 'a -> value
+
 module type Basic = sig
   type t [@@deriving eq, show, ord]
 
+  val ty : t Int_ty.t
   val bits : int
   val min_int : t
   val max_int : t
@@ -278,8 +262,7 @@ module type Basic = sig
   val bit_xor : t -> t -> t
   val of_int : int -> t option
   val of_string : string -> t option
-  val to_generic : t -> generic
-  val of_generic : generic -> t option
+  val of_value : value -> t option
 end
 [@@ocamlformat "module-item-spacing = compact"]
 
@@ -301,7 +284,7 @@ let determine_base s =
     10, s
 ;;
 
-(* This module is designed only for 8- and 16-bit integers (signed or unsigned). *)
+(* This module is designed only for 8- and 16-bit integers, whether signed or unsigned. *)
 module Inherit_int_basic (S : sig
     val min_int : int_wrapper
     val max_int : int_wrapper
@@ -331,36 +314,41 @@ struct
       | n -> Some (wrap n)
   ;;
 
-  let of_generic : generic -> int_wrapper option =
+  let of_value : value -> int_wrapper option =
       let min_value, max_value = unwrap S.min_int, unwrap S.max_int in
+      let of_small_int x =
+          if x >= min_value && x <= max_value then Some (wrap x) else None
+      in
       function
-      | U8 (_f, x) | U16 (_f, x) | I8 (_f, x) | I16 (_f, x) ->
-        if x >= min_value && x <= max_value then Some (wrap x) else None
-      | U32 (_f, x) ->
+      | Value (Int_ty.U8, (_f, x)) -> of_small_int x
+      | Value (Int_ty.U16, (_f, x)) -> of_small_int x
+      | Value (Int_ty.I8, (_f, x)) -> of_small_int x
+      | Value (Int_ty.I16, (_f, x)) -> of_small_int x
+      | Value (Int_ty.U32, (_f, x)) ->
         let open Int32 in
         if unsigned_compare x (of_int max_value) <= 0
         then Some (wrap (to_int x))
         else None
-      | U64 (_f, x) ->
+      | Value (Int_ty.U64, (_f, x)) ->
         let open Int64 in
         if unsigned_compare x (of_int max_value) <= 0
         then Some (wrap (to_int x))
         else None
-      | I32 (_f, x) ->
+      | Value (Int_ty.I32, (_f, x)) ->
         let open Int32 in
         if x >= of_int min_value && x <= of_int max_value
         then Some (wrap (to_int x))
         else None
-      | I64 (_f, x) ->
+      | Value (Int_ty.I64, (_f, x)) ->
         let open Int64 in
         if x >= of_int min_value && x <= of_int max_value
         then Some (wrap (to_int x))
         else None
-      | U128 (_f, x) ->
+      | Value (Int_ty.U128, (_f, x)) ->
         if C.u128_compare x (u128_of_u64 (Int64.of_int max_value)) <= 0
         then Some (wrap (Int64.to_int x.u128_low))
         else None
-      | I128 (_f, x) ->
+      | Value (Int_ty.I128, (_f, x)) ->
         if
           C.i128_compare x (i128_of_i64 (Int64.of_int min_value)) >= 0
           && C.i128_compare x (i128_of_i64 (Int64.of_int max_value)) <= 0
@@ -373,13 +361,13 @@ end
 module U8_basic : Basic with type t = u8 = struct
   type t = u8 [@@deriving eq, show, ord]
 
+  let ty = Int_ty.U8
   let bits = 8
   let min_int = wrap 0
   let max_int = wrap 255
   let shift_left_unchecked = wrap_op2 (fun x y -> (x lsl y) land unwrap max_int)
   let shift_right_unchecked = wrap_op2 (fun x y -> x lsr y)
   let bit_not = wrap_op1 (fun x -> lnot x land unwrap max_int)
-  let to_generic x = U8 x [@@coverage off]
 
   include Inherit_int_basic (struct
       let min_int = min_int
@@ -391,13 +379,13 @@ end
 module U16_basic : Basic with type t = u16 = struct
   type t = u16 [@@deriving eq, show, ord]
 
+  let ty = Int_ty.U16
   let bits = 16
   let min_int = wrap 0
   let max_int = wrap 65535
   let shift_left_unchecked = wrap_op2 (fun x y -> (x lsl y) land unwrap max_int)
   let shift_right_unchecked = wrap_op2 (fun x y -> x lsr y)
   let bit_not = wrap_op1 (fun x -> lnot x land unwrap max_int)
-  let to_generic x = U16 x [@@coverage off]
 
   include Inherit_int_basic (struct
       let min_int = min_int
@@ -409,6 +397,7 @@ end
 module U32_basic : Basic with type t = u32 = struct
   type t = u32 [@@deriving eq, show, ord]
 
+  let ty = Int_ty.U32
   let bits = 32
   let min_int = wrap Int32.zero
   let max_int = wrap Int32.minus_one
@@ -441,28 +430,31 @@ module U32_basic : Basic with type t = u32 = struct
       | Failure _s -> None
   ;;
 
-  let to_generic x = U32 x [@@coverage off]
-
-  let of_generic =
+  let of_value =
       let max_u32_as_i64 = 0xFFFFFFFFL in
+      let of_small_int x = Some (wrap (Int32.of_int x)) in
+      let of_small_signed_int x = if x >= 0 then Some (wrap (Int32.of_int x)) else None in
       function
-      | U8 (_f, x) | U16 (_f, x) -> Some (wrap (Int32.of_int x))
-      | U32 (_f, x) -> Some (wrap x)
-      | U64 (_f, x) ->
+      | Value (Int_ty.U8, (_f, x)) -> of_small_int x
+      | Value (Int_ty.U16, (_f, x)) -> of_small_int x
+      | Value (Int_ty.U32, x) -> Some x
+      | Value (Int_ty.U64, (_f, x)) ->
         if Int64.unsigned_compare x max_u32_as_i64 <= 0
         then Some (wrap (Int64.to_int32 x))
         else None
-      | U128 (_f, x) ->
+      | Value (Int_ty.U128, (_f, x)) ->
         if C.u128_compare x (u128_of_u64 max_u32_as_i64) <= 0
         then Some (wrap (Int64.to_int32 x.u128_low))
         else None
-      | I8 (_f, x) | I16 (_f, x) -> if x >= 0 then Some (wrap (Int32.of_int x)) else None
-      | I32 (_f, x) -> if Int32.(compare x zero >= 0) then Some (wrap x) else None
-      | I64 (_f, x) ->
+      | Value (Int_ty.I8, (_f, x)) -> of_small_signed_int x
+      | Value (Int_ty.I16, (_f, x)) -> of_small_signed_int x
+      | Value (Int_ty.I32, (_f, x)) ->
+        if Int32.(compare x zero >= 0) then Some (wrap x) else None
+      | Value (Int_ty.I64, (_f, x)) ->
         if Int64.(compare x zero >= 0 && compare x max_u32_as_i64 <= 0)
         then Some (wrap (Int64.to_int32 x))
         else None
-      | I128 (_f, x) ->
+      | Value (Int_ty.I128, (_f, x)) ->
         if
           C.i128_compare x (i128_of_i64 0L) >= 0
           && C.i128_compare x (i128_of_i64 max_u32_as_i64) <= 0
@@ -475,6 +467,7 @@ end
 module U64_basic : Basic with type t = u64 = struct
   type t = u64 [@@deriving eq, show, ord]
 
+  let ty = Int_ty.U64
   let bits = 64
   let min_int = wrap Int64.zero
   let max_int = wrap Int64.minus_one
@@ -502,23 +495,26 @@ module U64_basic : Basic with type t = u64 = struct
       | Failure _s -> None
   ;;
 
-  let to_generic x = U64 x [@@coverage off]
-
-  let of_generic =
+  let of_value =
       let max_u64_as_i64 = Int64.minus_one in
+      let of_small_int x = Some (wrap (Int64.of_int x)) in
+      let of_small_signed_int x = if x >= 0 then Some (wrap (Int64.of_int x)) else None in
       function
-      | U8 (_f, x) | U16 (_f, x) -> Some (wrap (Int64.of_int x))
-      | U32 (_f, x) -> Some (wrap (Int64.of_int32 x))
-      | U64 (_f, x) -> Some (wrap x)
-      | U128 (_f, x) ->
+      | Value (Int_ty.U8, (_f, x)) -> of_small_int x
+      | Value (Int_ty.U16, (_f, x)) -> of_small_int x
+      | Value (Int_ty.U32, (_f, x)) -> Some (wrap (Int64.of_int32 x))
+      | Value (Int_ty.U64, x) -> Some x
+      | Value (Int_ty.U128, (_f, x)) ->
         if C.u128_compare x (u128_of_u64 max_u64_as_i64) <= 0
         then Some (wrap x.u128_low)
         else None
-      | I8 (_f, x) | I16 (_f, x) -> if x >= 0 then Some (wrap (Int64.of_int x)) else None
-      | I32 (_f, x) ->
+      | Value (Int_ty.I8, (_f, x)) -> of_small_signed_int x
+      | Value (Int_ty.I16, (_f, x)) -> of_small_signed_int x
+      | Value (Int_ty.I32, (_f, x)) ->
         if Int32.(compare x zero >= 0) then Some (wrap (Int64.of_int32 x)) else None
-      | I64 (_f, x) -> if Int64.(compare x zero >= 0) then Some (wrap x) else None
-      | I128 (_f, x) ->
+      | Value (Int_ty.I64, (_f, x)) ->
+        if Int64.(compare x zero >= 0) then Some (wrap x) else None
+      | Value (Int_ty.I128, (_f, x)) ->
         if
           C.i128_compare x (i128_of_i64 0L) >= 0
           && C.i128_compare x (i128_of_u64 max_u64_as_i64) <= 0
@@ -531,6 +527,7 @@ end
 module U128_basic : Basic with type t = u128 = struct
   type t = u128 [@@deriving eq, show, ord]
 
+  let ty = Int_ty.U128
   let bits = 128
   let min_int = wrap (C.u128_min ())
   let max_int = wrap (C.u128_max ())
@@ -554,23 +551,27 @@ module U128_basic : Basic with type t = u128 = struct
       | Failure _s -> None
   ;;
 
-  let to_generic x = U128 x [@@coverage off]
-
-  let of_generic = function
-    | U8 (_f, x) | U16 (_f, x) -> Some (wrap (u128_of_u64 (Int64.of_int x)))
-    | U32 (_f, x) -> Some (wrap (u128_of_u32 x))
-    | U64 (_f, x) -> Some (wrap (u128_of_u64 x))
-    | U128 (_f, x) -> Some (wrap x)
-    | I8 (_f, x) | I16 (_f, x) ->
-      if x >= 0 then Some (wrap (u128_of_u64 (Int64.of_int x))) else None
-    | I32 (_f, x) ->
-      if Int32.(compare x zero >= 0) then Some (wrap (u128_of_u32 x)) else None
-    | I64 (_f, x) ->
-      if Int64.(compare x zero >= 0) then Some (wrap (u128_of_u64 x)) else None
-    | I128 (_f, x) ->
-      if C.(i128_compare x (i128_of_i64 0L) >= 0)
-      then Some (wrap (u128_of_i128_unchecked x))
-      else None
+  let of_value =
+      let of_small_int x = Some (wrap (u128_of_u64 (Int64.of_int x))) in
+      let of_small_signed_int x =
+          if x >= 0 then Some (wrap (u128_of_u64 (Int64.of_int x))) else None
+      in
+      function
+      | Value (Int_ty.U8, (_f, x)) -> of_small_int x
+      | Value (Int_ty.U16, (_f, x)) -> of_small_int x
+      | Value (Int_ty.U32, (_f, x)) -> Some (wrap (u128_of_u32 x))
+      | Value (Int_ty.U64, (_f, x)) -> Some (wrap (u128_of_u64 x))
+      | Value (Int_ty.U128, x) -> Some x
+      | Value (Int_ty.I8, (_f, x)) -> of_small_signed_int x
+      | Value (Int_ty.I16, (_f, x)) -> of_small_signed_int x
+      | Value (Int_ty.I32, (_f, x)) ->
+        if Int32.(compare x zero >= 0) then Some (wrap (u128_of_u32 x)) else None
+      | Value (Int_ty.I64, (_f, x)) ->
+        if Int64.(compare x zero >= 0) then Some (wrap (u128_of_u64 x)) else None
+      | Value (Int_ty.I128, (_f, x)) ->
+        if C.(i128_compare x (i128_of_i64 0L) >= 0)
+        then Some (wrap (u128_of_i128_unchecked x))
+        else None
   ;;
 end
 [@@ocamlformat "module-item-spacing = compact"]
@@ -578,13 +579,13 @@ end
 module I8_basic : Basic with type t = i8 = struct
   type t = i8 [@@deriving eq, show, ord]
 
+  let ty = Int_ty.I8
   let bits = 8
   let min_int = wrap (-128)
   let max_int = wrap 127
   let shift_left_unchecked = wrap_op2 C.i8_shift_left
   let shift_right_unchecked = wrap_op2 C.i8_shift_right
   let bit_not = wrap_op1 C.i8_bit_not
-  let to_generic x = I8 x [@@coverage off]
 
   include Inherit_int_basic (struct
       let min_int = min_int
@@ -596,13 +597,13 @@ end
 module I16_basic : Basic with type t = i16 = struct
   type t = i16 [@@deriving eq, show, ord]
 
+  let ty = Int_ty.I16
   let bits = 16
   let min_int = wrap (-32768)
   let max_int = wrap 32767
   let shift_left_unchecked = wrap_op2 C.i16_shift_left
   let shift_right_unchecked = wrap_op2 C.i16_shift_right
   let bit_not = wrap_op1 C.i16_bit_not
-  let to_generic x = I16 x [@@coverage off]
 
   include Inherit_int_basic (struct
       let min_int = min_int
@@ -614,6 +615,7 @@ end
 module I32_basic : Basic with type t = i32 = struct
   type t = i32 [@@deriving eq, show, ord]
 
+  let ty = Int_ty.I32
   let bits = 32
   let min_int = wrap Int32.min_int
   let max_int = wrap Int32.max_int
@@ -645,31 +647,32 @@ module I32_basic : Basic with type t = i32 = struct
       | Failure _s -> None
   ;;
 
-  let to_generic x = I32 x [@@coverage off]
-
-  let of_generic =
+  let of_value =
       let min_i32_as_i64, max_i32_as_i64 =
           Int64.(of_int32 Int32.min_int, of_int32 Int32.max_int)
       in
+      let of_small_int x = Some (wrap (Int32.of_int x)) in
       function
-      | U8 (_f, x) | U16 (_f, x) | I8 (_f, x) | I16 (_f, x) ->
-        Some (wrap (Int32.of_int x))
-      | U32 (_f, x) ->
+      | Value (Int_ty.U8, (_f, x)) -> of_small_int x
+      | Value (Int_ty.U16, (_f, x)) -> of_small_int x
+      | Value (Int_ty.I8, (_f, x)) -> of_small_int x
+      | Value (Int_ty.I16, (_f, x)) -> of_small_int x
+      | Value (Int_ty.U32, (_f, x)) ->
         if Int32.(unsigned_compare x max_int <= 0) then Some (wrap x) else None
-      | U64 (_f, x) ->
+      | Value (Int_ty.U64, (_f, x)) ->
         if Int64.unsigned_compare x max_i32_as_i64 <= 0
         then Some (wrap (Int64.to_int32 x))
         else None
-      | U128 (_f, x) ->
+      | Value (Int_ty.U128, (_f, x)) ->
         if C.u128_compare x (u128_of_u64 max_i32_as_i64) <= 0
         then Some (wrap (Int64.to_int32 x.u128_low))
         else None
-      | I32 (_f, x) -> Some (wrap x)
-      | I64 (_f, x) ->
+      | Value (Int_ty.I32, x) -> Some x
+      | Value (Int_ty.I64, (_f, x)) ->
         if Int64.(compare x min_i32_as_i64 >= 0 && compare x max_i32_as_i64 <= 0)
         then Some (wrap (Int64.to_int32 x))
         else None
-      | I128 (_f, x) ->
+      | Value (Int_ty.I128, (_f, x)) ->
         if
           C.i128_compare x (i128_of_i64 min_i32_as_i64) >= 0
           && C.i128_compare x (i128_of_i64 max_i32_as_i64) <= 0
@@ -682,6 +685,7 @@ end
 module I64_basic : Basic with type t = i64 = struct
   type t = i64 [@@deriving eq, show, ord]
 
+  let ty = Int_ty.I64
   let bits = 64
   let min_int = wrap Int64.min_int
   let max_int = wrap Int64.max_int
@@ -705,24 +709,28 @@ module I64_basic : Basic with type t = i64 = struct
       | Failure _s -> None
   ;;
 
-  let to_generic x = I64 x [@@coverage off]
-
-  let of_generic = function
-    | U8 (_f, x) | U16 (_f, x) | I8 (_f, x) | I16 (_f, x) -> Some (wrap (Int64.of_int x))
-    | U32 (_f, x) | I32 (_f, x) -> Some (wrap (Int64.of_int32 x))
-    | U64 (_f, x) ->
-      if Int64.(unsigned_compare x max_int <= 0) then Some (wrap x) else None
-    | U128 (_f, x) ->
-      if C.u128_compare x (u128_of_u64 Int64.max_int) <= 0
-      then Some (wrap x.u128_low)
-      else None
-    | I64 (_f, x) -> Some (wrap x)
-    | I128 (_f, x) ->
-      if
-        C.i128_compare x (i128_of_i64 Int64.min_int) >= 0
-        && C.i128_compare x (i128_of_i64 Int64.max_int) <= 0
-      then Some (wrap (i128_to_i64_unchecked x))
-      else None
+  let of_value =
+      let of_small_int x = Some (wrap (Int64.of_int x)) in
+      function
+      | Value (Int_ty.U8, (_f, x)) -> of_small_int x
+      | Value (Int_ty.U16, (_f, x)) -> of_small_int x
+      | Value (Int_ty.I8, (_f, x)) -> of_small_int x
+      | Value (Int_ty.I16, (_f, x)) -> of_small_int x
+      | Value (Int_ty.U32, (_f, x)) -> Some (wrap (Int64.of_int32 x))
+      | Value (Int_ty.I32, (_f, x)) -> Some (wrap (Int64.of_int32 x))
+      | Value (Int_ty.U64, (_f, x)) ->
+        if Int64.(unsigned_compare x max_int <= 0) then Some (wrap x) else None
+      | Value (Int_ty.U128, (_f, x)) ->
+        if C.u128_compare x (u128_of_u64 Int64.max_int) <= 0
+        then Some (wrap x.u128_low)
+        else None
+      | Value (Int_ty.I64, x) -> Some x
+      | Value (Int_ty.I128, (_f, x)) ->
+        if
+          C.i128_compare x (i128_of_i64 Int64.min_int) >= 0
+          && C.i128_compare x (i128_of_i64 Int64.max_int) <= 0
+        then Some (wrap (i128_to_i64_unchecked x))
+        else None
   ;;
 end
 [@@ocamlformat "module-item-spacing = compact"]
@@ -730,6 +738,7 @@ end
 module I128_basic : Basic with type t = i128 = struct
   type t = i128 [@@deriving eq, show, ord]
 
+  let ty = Int_ty.I128
   let bits = 128
   let min_int = wrap (C.i128_min ())
   let max_int = wrap (C.i128_max ())
@@ -753,22 +762,23 @@ module I128_basic : Basic with type t = i128 = struct
       | Failure _s -> None
   ;;
 
-  let to_generic x = I128 x [@@coverage off]
-
-  let of_generic =
+  let of_value =
       let max_i128_as_u128 = u128_of_i128_unchecked (C.i128_max ()) in
+      let of_small_int x = Some (wrap (i128_of_i64 (Int64.of_int x))) in
       function
-      | U8 (_f, x) | U16 (_f, x) | I8 (_f, x) | I16 (_f, x) ->
-        Some (wrap (i128_of_i64 (Int64.of_int x)))
-      | U32 (_f, x) -> Some (wrap (i128_of_u32 x))
-      | U64 (_f, x) -> Some (wrap (i128_of_u64 x))
-      | U128 (_f, x) ->
+      | Value (Int_ty.U8, (_f, x)) -> of_small_int x
+      | Value (Int_ty.U16, (_f, x)) -> of_small_int x
+      | Value (Int_ty.I8, (_f, x)) -> of_small_int x
+      | Value (Int_ty.I16, (_f, x)) -> of_small_int x
+      | Value (Int_ty.U32, (_f, x)) -> Some (wrap (i128_of_u32 x))
+      | Value (Int_ty.U64, (_f, x)) -> Some (wrap (i128_of_u64 x))
+      | Value (Int_ty.U128, (_f, x)) ->
         if C.u128_compare x max_i128_as_u128 <= 0
         then Some (wrap (i128_of_u128_unchecked x))
         else None
-      | I32 (_f, x) -> Some (wrap (i128_of_i32 x))
-      | I64 (_f, x) -> Some (wrap (i128_of_i64 x))
-      | I128 (_f, x) -> Some (wrap x)
+      | Value (Int_ty.I32, (_f, x)) -> Some (wrap (i128_of_i32 x))
+      | Value (Int_ty.I64, (_f, x)) -> Some (wrap (i128_of_i64 x))
+      | Value (Int_ty.I128, x) -> Some x
   ;;
 end
 [@@ocamlformat "module-item-spacing = compact"]
@@ -776,8 +786,8 @@ end
 module type S = sig
   type t [@@deriving eq, show, ord]
 
+  val ty : t Int_ty.t
   val bits : int
-  val int_ty : int_ty
   val zero : t
   val one : t
   val all_ones : t
@@ -817,9 +827,9 @@ module type S = sig
   val shift_left_exn : t -> t -> t
   val shift_right_exn : t -> t -> t
   val to_string : t -> string
-  val of_generic : generic -> t option
-  val of_generic_exn : generic -> t
-  val to_generic : t -> generic
+  val of_value : value -> t option
+  val of_value_exn : value -> t
+  val to_value : t -> value
 end
 [@@ocamlformat "module-item-spacing = compact"]
 
@@ -828,8 +838,6 @@ let overflow, underflow, div_by_zero = None, None, None
 module Make (S : Basic) : S with type t = S.t = struct
   include S
   open S
-
-  let int_ty = Int_ty.of_generic (to_generic (of_int_unchecked 0))
 
   let zero, one = of_int_unchecked 0, of_int_unchecked 1
 
@@ -963,11 +971,13 @@ module Make (S : Basic) : S with type t = S.t = struct
       , check shift_right )
   ;;
 
-  let of_generic_exn x =
-      match of_generic x with
+  let of_value_exn x =
+      match of_value x with
       | Some y -> y
       | None -> raise Out_of_range
   ;;
+
+  let to_value x = Value (ty, x)
 
   let to_string = show
 end
@@ -1012,101 +1022,51 @@ end = struct
   ;;
 end
 
-let ops : int_ty -> (module S) = function
-  | Unsigned, Bits8 -> (module U8)
-  | Unsigned, Bits16 -> (module U16)
-  | Unsigned, Bits32 -> (module U32)
-  | Unsigned, Bits64 -> (module U64)
-  | Unsigned, Bits128 -> (module U128)
-  | Signed, Bits8 -> (module I8)
-  | Signed, Bits16 -> (module I16)
-  | Signed, Bits32 -> (module I32)
-  | Signed, Bits64 -> (module I64)
-  | Signed, Bits128 -> (module I128)
+let ops : type a. a Int_ty.t -> (module S with type t = a) = function
+  | Int_ty.U8 -> (module U8)
+  | Int_ty.U16 -> (module U16)
+  | Int_ty.U32 -> (module U32)
+  | Int_ty.U64 -> (module U64)
+  | Int_ty.U128 -> (module U128)
+  | Int_ty.I8 -> (module I8)
+  | Int_ty.I16 -> (module I16)
+  | Int_ty.I32 -> (module I32)
+  | Int_ty.I64 -> (module I64)
+  | Int_ty.I128 -> (module I128)
 ;;
+
+let equal_value v1 v2 =
+    match v1, v2 with
+    | Value (ty, x), Value (ty', y) ->
+      (match Int_ty.equate (ty, ty') with
+       | Some Int_ty.Eq ->
+         let (module S) = ops ty in
+         S.equal x y
+       | None -> false)
+;;
+
+let pp_value fmt (Value (ty, x)) =
+    let (module S) = ops ty in
+    S.pp fmt x
+;;
+
+let show_value v = Format.asprintf "%a" pp_value v
 
 [@@@coverage off]
 
-module type Singleton = sig
-  type t
-
-  include S with type t := t
-
-  val value : t
-end
-
-let singleton =
-    let make (type a) (module S : S with type t = a) x =
-        (module struct
-          include S
-
-          let value = x
-        end : Singleton)
-    in
-    function
-    | U8 x -> make (module U8) x
-    | U16 x -> make (module U16) x
-    | U32 x -> make (module U32) x
-    | U64 x -> make (module U64) x
-    | U128 x -> make (module U128) x
-    | I8 x -> make (module I8) x
-    | I16 x -> make (module I16) x
-    | I32 x -> make (module I32) x
-    | I64 x -> make (module I64) x
-    | I128 x -> make (module I128) x
+let is_zero (Value (ty, x)) =
+    let (module S) = ops ty in
+    S.(equal x zero)
 ;;
 
-let is_zero x =
-    let (module Singleton) = singleton x in
-    Singleton.(equal value zero)
+let is_one (Value (ty, x)) =
+    let (module S) = ops ty in
+    S.(equal x one)
 ;;
 
-let is_one x =
-    let (module Singleton) = singleton x in
-    Singleton.(equal value one)
-;;
-
-let is_all_ones x =
-    let (module Singleton) = singleton x in
-    Singleton.(equal value all_ones)
-;;
-
-module type Pair = sig
-  type t
-
-  include S with type t := t
-
-  val value : t * t
-end
-
-let pair =
-    let make (type a) (module S : S with type t = a) (x, y) =
-        (module struct
-          include S
-
-          let value = x, y
-        end : Pair)
-        |> Option.some
-    in
-    function
-    | U8 x, U8 y -> make (module U8) (x, y)
-    | U16 x, U16 y -> make (module U16) (x, y)
-    | U32 x, U32 y -> make (module U32) (x, y)
-    | U64 x, U64 y -> make (module U64) (x, y)
-    | U128 x, U128 y -> make (module U128) (x, y)
-    | I8 x, I8 y -> make (module I8) (x, y)
-    | I16 x, I16 y -> make (module I16) (x, y)
-    | I32 x, I32 y -> make (module I32) (x, y)
-    | I64 x, I64 y -> make (module I64) (x, y)
-    | I128 x, I128 y -> make (module I128) (x, y)
-    | (U8 _ | U16 _ | U32 _ | U64 _ | U128 _ | I8 _ | I16 _ | I32 _ | I64 _ | I128 _), _
-      -> None
-;;
-
-let pair_exn (x, y) =
-    match pair (x, y) with
-    | Some pair -> pair
-    | None -> invalid_arg "Checked_oint.pair_exn"
+let is_all_ones (Value (ty, x)) =
+    let (module S) = ops ty in
+    S.(equal x all_ones)
 ;;
 
 [@@@coverage on]

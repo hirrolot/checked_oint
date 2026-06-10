@@ -6,6 +6,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## unreleased
 
+### Added
+
+ - `S.ty` as the type representation of `S.t`.
+
+### Changed
+
+ - Rework `Int_ty.t` as a GADT indexed by the corresponding OCaml type; the new `Int_ty.equate` decides type equality.
+ - Replace the `generic` type with `value`, which carries an `Int_ty.t` witness; rename the `S.of_generic` function family accordingly.
+ - The `ops` function is now typed: `ops : 'a Int_ty.t -> (module S with type t = 'a)`.
+
+### Removed
+
+ - `singleton` and `pair`/`pair_exn`, which materialized a fresh first-class module on every call.
+ - The `signedness`, `bitness`, and `int_ty` types, together with `S.int_ty`.
+
 ## 1.0.1 - 2025-11-30
 
 ### Changed
