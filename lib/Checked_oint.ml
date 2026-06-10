@@ -92,7 +92,7 @@ include struct
       then i128_low
       else if i128_high = -1L
       then i128_low
-      else failwith "Impossible" [@coverage off]
+      else failwith "Impossible"
   ;;
 
   let i128_to_i32_unchecked x = Int64.to_int32 (i128_to_i64_unchecked x)
@@ -103,7 +103,7 @@ exception Out_of_range
 (* Polymorphic comparison operators will raise an exception on [unit -> unit]. *)
 type 'a wrapper = (unit -> unit) * 'a
 
-let wrap x = ((fun () -> ()), x) [@coverage off]
+let wrap x = (fun () -> ()), x
 
 let unwrap (_f, x) = x
 
@@ -197,8 +197,6 @@ type i128_wrapper = C.i128 wrapper
 
 type i128 = i128_wrapper [@@deriving eq, show, ord]
 
-[@@@coverage off]
-
 module Int_ty = struct
   type _ t =
     | U8 : u8 t
@@ -236,8 +234,6 @@ module Int_ty = struct
   ;;
 end
 [@@ocamlformat "module-item-spacing = compact"]
-
-[@@@coverage on]
 
 type value = Value : 'a Int_ty.t * 'a -> value
 
@@ -1052,8 +1048,6 @@ let pp_value fmt (Value (ty, x)) =
 
 let show_value v = Format.asprintf "%a" pp_value v
 
-[@@@coverage off]
-
 let is_zero (Value (ty, x)) =
     let (module S) = ops ty in
     S.(equal x zero)
@@ -1068,5 +1062,3 @@ let is_all_ones (Value (ty, x)) =
     let (module S) = ops ty in
     S.(equal x all_ones)
 ;;
-
-[@@@coverage on]

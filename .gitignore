@@ -30,6 +30,3 @@ _opam/
 
 # IDE files
 .vscode/
-
-# Code coverage
-_coverage/

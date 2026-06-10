@@ -12,7 +12,6 @@ depends: [
   "dune" {>= "3.14"}
   "ppx_deriving"
   "ppx_enumerate"
-  "bisect_ppx" {with-test}
   "alcotest" {with-test & >= "1.7.0"}
   "odoc" {with-doc}
 ]
