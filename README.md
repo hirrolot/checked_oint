@@ -1,6 +1,6 @@
 # `checked_oint`
 
-`checked_oint` is an OCaml library for checked integer arithmetic. We support the full set of signed and unsigned integers of bitnesses 8, 16, 32, 64, and 128.
+`checked_oint` is an OCaml library for checked integer arithmetic. We support the full set of signed and unsigned integers of bitnesses 8, 16, 32, 64, and 128. For situations when the exact types of integers are unknown at compile-time, we provide a proper escape hatch based on existential types.
 
 ## Installation
 
