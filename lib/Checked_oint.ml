@@ -60,6 +60,9 @@ module C = struct
 end
 [@@ocamlformat "module-item-spacing = compact"]
 
+(* Unlike [Int64.of_int32], this function zero-extends its argument. *)
+let u64_of_u32 x = Int64.(logand (of_int32 x) 0xFFFFFFFFL)
+
 (* Conversions to/from unsigned 128-bit integers. *)
 include struct
   let u128_of_i128_unchecked C.{ i128_high; i128_low } =
@@ -68,7 +71,7 @@ include struct
 
   let u128_of_u64 x = C.{ u128_high = 0L; u128_low = x }
 
-  let u128_of_u32 x = u128_of_u64 (Int64.of_int32 x)
+  let u128_of_u32 x = u128_of_u64 (u64_of_u32 x)
 end
 
 (* Conversions to/from signed 128-bit integers. *)
@@ -79,7 +82,7 @@ include struct
 
   let i128_of_u64 x = C.{ i128_high = 0L; i128_low = x }
 
-  let i128_of_u32 x = i128_of_u64 (Int64.of_int32 x)
+  let i128_of_u32 x = i128_of_u64 (u64_of_u32 x)
 
   let i128_of_i64 x =
       if x >= 0L then i128_of_u64 x else C.{ i128_high = -1L; i128_low = x }
@@ -498,7 +501,7 @@ module U64_basic : Basic with type t = u64 = struct
       function
       | Value (Int_ty.U8, (_f, x)) -> of_small_int x
       | Value (Int_ty.U16, (_f, x)) -> of_small_int x
-      | Value (Int_ty.U32, (_f, x)) -> Some (wrap (Int64.of_int32 x))
+      | Value (Int_ty.U32, (_f, x)) -> Some (wrap (u64_of_u32 x))
       | Value (Int_ty.U64, x) -> Some x
       | Value (Int_ty.U128, (_f, x)) ->
         if C.u128_compare x (u128_of_u64 max_u64_as_i64) <= 0
@@ -712,7 +715,7 @@ module I64_basic : Basic with type t = i64 = struct
       | Value (Int_ty.U16, (_f, x)) -> of_small_int x
       | Value (Int_ty.I8, (_f, x)) -> of_small_int x
       | Value (Int_ty.I16, (_f, x)) -> of_small_int x
-      | Value (Int_ty.U32, (_f, x)) -> Some (wrap (Int64.of_int32 x))
+      | Value (Int_ty.U32, (_f, x)) -> Some (wrap (u64_of_u32 x))
       | Value (Int_ty.I32, (_f, x)) -> Some (wrap (Int64.of_int32 x))
       | Value (Int_ty.U64, (_f, x)) ->
         if Int64.(unsigned_compare x max_int <= 0) then Some (wrap x) else None

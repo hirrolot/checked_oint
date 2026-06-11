@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## unreleased
 
+### Fixed
+
+ - Zero-extend `u32` integers in `U64.of_value`, `I64.of_value`, `U128.of_value`, and `I128.of_value` instead of sign-extending them.
+ - Truncate the results of `I8.shift_left` and `I16.shift_left` to 8 and 16 bits, respectively.
+ - Reject negative integers in `U32.of_string` and `U64.of_string`.
+ - Avoid undefined behavior when reassembling 128-bit integers in the C stubs.
+
 ## 2.0.0 - 2026-06-10
 
 ### Added

@@ -27,6 +27,11 @@ let limits =
     ]
 ;;
 
+let signedness = function
+  | true -> 'i'
+  | false -> 'u'
+;;
+
 let cases = []
 
 let check_ocaml_oints () =
@@ -326,52 +331,72 @@ let cases = ("Identity conversion", identity_conversion) :: cases
 
 let value_conversion () =
     int_modules_list
-    |> List.iter (fun (module Source : S) ->
+    |> List.iter (fun (module S : S) ->
       int_modules_list
-      |> List.iter (fun (module Destination : S) ->
+      |> List.iter (fun (module D : S) ->
         let make_msg ~prefix x =
-            let signedness = function
-              | true -> 'i'
-              | false -> 'u'
-            in
             Printf.sprintf
               "%s: %c%d -> %c%d: %s"
               prefix
-              (signedness Source.is_signed)
-              Source.bits
-              (signedness Destination.is_signed)
-              Destination.bits
-              (Source.to_string x)
+              (signedness S.is_signed)
+              S.bits
+              (signedness D.is_signed)
+              D.bits
+              (S.to_string x)
         in
         let check msg x =
             check_string
               (make_msg ~prefix:msg x)
-              ( Destination.(to_string (of_value_exn (Source.to_value x)))
-              , Source.to_string x )
+              (D.(to_string (of_value_exn (S.to_value x))), S.to_string x)
         in
         let check_raises msg x =
             Alcotest.check_raises (make_msg ~prefix:msg x) Out_of_range (fun () ->
-              ignore (Destination.of_value_exn (Source.to_value x)))
+              ignore (D.of_value_exn (S.to_value x)))
         in
-        check "Good" (Source.of_int_exn 0);
-        check "Good" (Source.of_int_exn 42);
-        if Source.is_signed && Destination.is_signed
-        then check "Good" (Source.of_int_exn (-42));
-        if
-          Source.bits > Destination.bits
-          || (Source.bits = Destination.bits
-              && (not Source.is_signed)
-              && Destination.is_signed)
-        then check_raises "Positive overflow" Source.max_int;
-        if
-          Source.is_signed
-          && (Source.bits > Destination.bits
-              || (Source.bits <= Destination.bits && not Destination.is_signed))
-        then check_raises "Negative overflow" Source.min_int;
+        check "Good" (S.of_int_exn 0);
+        check "Good" (S.of_int_exn 42);
+        if S.is_signed && D.is_signed then check "Good" (S.of_int_exn (-42));
+        if S.bits > D.bits || (S.bits = D.bits && (not S.is_signed) && D.is_signed)
+        then check_raises "Positive overflow" S.max_int
+        else check "Good" S.max_int;
+        if S.is_signed && (S.bits > D.bits || (S.bits <= D.bits && not D.is_signed))
+        then check_raises "Negative overflow" S.min_int
+        else check "Good" S.min_int;
         ()))
 ;;
 
 let cases = ("Value conversion", value_conversion) :: cases
+
+let truncate_left_shifts () =
+    [ (module I8 : S); (module I16) ]
+    |> List.iter (fun (module S : S) ->
+      let check msg (actual, expected) =
+          Alcotest.(check' (module S)) ~msg ~actual ~expected
+      in
+      let bits_minus_one = S.of_int_exn (S.bits - 1) in
+      let top_two_bits = S.of_int_exn (0b11 lsl (S.bits - 3)) in
+      check "Shift into the sign bit" S.(shift_left_exn one bits_minus_one, min_int);
+      check "Shift out of range" S.(shift_left_exn max_int one, of_int_exn (-2));
+      check
+        "Shift out of range completely"
+        S.(shift_left_exn top_two_bits (of_int_exn 3), zero))
+;;
+
+let cases = ("Truncate left shifts", truncate_left_shifts) :: cases
+
+let reject_negative_ints () =
+    let check_raises (module S : S) msg s =
+        Alcotest.check_raises msg Out_of_range (fun () -> ignore (S.of_string_exn s))
+    in
+    check_raises (module U32) "Raises" "-42";
+    check_raises (module U32) "Raises" "-18446744069414584321";
+    check_raises (module U64) "Raises" "-42";
+    check_raises (module U64) "Raises" "-0x2a";
+    check_raises (module U64) "Raises" "-1";
+    check_raises (module U64) "Raises" "-18446744073709551615"
+;;
+
+let cases = ("Reject negative integers", reject_negative_ints) :: cases
 
 let cases =
     cases |> List.rev |> List.map (fun (name, f) -> Alcotest.test_case name `Quick f)

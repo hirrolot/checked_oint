@@ -49,6 +49,10 @@ static bool is_valid_base(const int base) {
             result > C_INT_MAX(namespace)) {                                   \
             return -1;                                                         \
         }                                                                      \
+        if (0 == C_INT_MIN(namespace) && '-' == s[0] && 0 != result) {         \
+            /* `strtoumax` wraps negative input around instead of failing. */  \
+            return -1;                                                         \
+        }                                                                      \
         _Pragma("GCC diagnostic pop");                                         \
                                                                                \
         *x = (C_INT_TY(namespace))result;                                      \
@@ -80,8 +84,9 @@ X(i16)
         assert(Int_val(y) >= 0);                                               \
         assert(Int_val(y) < (int)C_INT_BIT_WIDTH(namespace));                  \
                                                                                \
-        CAMLreturn(                                                            \
-            Val_int((int)(C_VALUE(namespace, x) op C_VALUE(namespace, y))));   \
+        const C_INT_TY(namespace) result =                                     \
+            C_VALUE(namespace, x) op C_VALUE(namespace, y);                    \
+        CAMLreturn(Val_int((int)result));                                      \
     }
 
 X(i8, shift_left, <<)
@@ -129,7 +134,8 @@ X(i64)
     static C_INT_TY(namespace) namespace##_unwrap(value x) {                   \
         const uint64_t high = C_VALUE(u64, Field(x, 0)),                       \
                        low = C_VALUE(u64, Field(x, 1));                        \
-        return (C_INT_TY(namespace))high << 64 | (C_INT_TY(namespace))low;     \
+        const unsigned __int128 result = (unsigned __int128)high << 64 | low;  \
+        return (C_INT_TY(namespace))result;                                    \
     }                                                                          \
                                                                                \
     value checked_oint_##namespace##_equal(value x, value y) {                 \

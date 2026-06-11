@@ -1,5 +1,3 @@
 #!/bin/bash
 
-set -e
-
-dune test
+dune test --force
