@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## unreleased
 
+## 2.0.1 - 2026-06-11
+
 ### Fixed
 
  - Zero-extend `u32` integers in `U64.of_value`, `I64.of_value`, `U128.of_value`, and `I128.of_value` instead of sign-extending them.
