@@ -67,6 +67,35 @@ let check_ocaml_oints () =
 
 let cases = ("Check OCaml integers", check_ocaml_oints) :: cases
 
+let convert_to_ocaml_oints () =
+    int_modules_list
+    |> List.iter (fun (module S : S) ->
+      let check msg x =
+          check_string msg (string_of_int (S.to_int_exn x), S.to_string x)
+      in
+      let check_raises msg x =
+          Alcotest.check_raises msg Out_of_range (fun () -> ignore (S.to_int_exn x))
+      in
+      let fits = if S.is_signed then S.bits <= Sys.int_size else S.bits < Sys.int_size in
+      let exceeds = not fits in
+      check "Zero" S.zero;
+      check "Of 100" (S.of_int_exn 100);
+      if S.is_signed then check "Of -100" (S.of_int_exn (-100));
+      if fits then check "The minimum integer" S.min_int;
+      if fits then check "The maximum integer" S.max_int;
+      if exceeds then check "The maximum OCaml integer" (S.of_int_exn Stdlib.max_int);
+      if exceeds then check_raises "Overflow" S.(succ_exn (of_int_exn Stdlib.max_int));
+      if exceeds then check_raises "Overflow (the maximum integer)" S.max_int;
+      if exceeds && S.is_signed
+      then check "The minimum OCaml integer" (S.of_int_exn Stdlib.min_int);
+      if exceeds && S.is_signed
+      then check_raises "Underflow" S.(pred_exn (of_int_exn Stdlib.min_int));
+      if exceeds && S.is_signed
+      then check_raises "Underflow (the minimum integer)" S.min_int)
+;;
+
+let cases = ("Convert to OCaml integers", convert_to_ocaml_oints) :: cases
+
 let perform_ops () =
     int_modules_list
     |> List.iter (fun (module S : S) ->

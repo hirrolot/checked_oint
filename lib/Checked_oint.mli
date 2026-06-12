@@ -114,7 +114,7 @@ module type S = sig
   (** Whether this integer type is signed or not. *)
   val is_signed : bool
 
-  (** Constructs a value out of [int]; returns [None] on overflow/underflow. *)
+  (** Constructs a value out of OCaml's [int]; returns [None] on overflow/underflow. *)
   val of_int : int -> t option
 
   (** Constructs a value out of [string]; returns [None] on overflow/underflow.
@@ -227,6 +227,12 @@ module type S = sig
       This is a logical shift for unsigned integer types and arithmetic shift for signed
       integer types. *)
   val shift_right_exn : t -> t -> t
+
+  (** Converts a value into OCaml's [int]; returns [None] if the value does not fit. *)
+  val to_int : t -> int option
+
+  (** Same as {!to_int} but raises {!Out_of_range} instead of returning [None]. *)
+  val to_int_exn : t -> int
 
   (** Prints a value in decimal; same as {!show}. *)
   val to_string : t -> string

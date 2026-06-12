@@ -63,42 +63,38 @@ end
 (* Unlike [Int64.of_int32], this function zero-extends its argument. *)
 let u64_of_u32 x = Int64.(logand (of_int32 x) 0xFFFFFFFFL)
 
+(* Returns [None] if the argument does not fit in [int]. *)
+let i64_to_int x =
+    let n = Int64.to_int x in
+    if Int64.(equal (of_int n) x) then Some n else None
+;;
+
 (* Conversions to/from unsigned 128-bit integers. *)
 include struct
-  let u128_of_i128_unchecked C.{ i128_high; i128_low } =
-      C.{ u128_high = i128_high; u128_low = i128_low }
+  let u128_of_i128_unchecked C.{ i128_high = u128_high; i128_low = u128_low } =
+      C.{ u128_high; u128_low }
   ;;
 
   let u128_of_u64 x = C.{ u128_high = 0L; u128_low = x }
 
-  let u128_of_u32 x = u128_of_u64 (u64_of_u32 x)
+  let u128_of_u32 x = C.{ u128_high = 0L; u128_low = u64_of_u32 x }
 end
 
 (* Conversions to/from signed 128-bit integers. *)
 include struct
-  let i128_of_u128_unchecked C.{ u128_high; u128_low } =
-      C.{ i128_high = u128_high; i128_low = u128_low }
+  let i128_of_u128_unchecked C.{ u128_high = i128_high; u128_low = i128_low } =
+      C.{ i128_high; i128_low }
   ;;
 
   let i128_of_u64 x = C.{ i128_high = 0L; i128_low = x }
 
-  let i128_of_u32 x = i128_of_u64 (u64_of_u32 x)
+  let i128_of_u32 x = C.{ i128_high = 0L; i128_low = u64_of_u32 x }
 
-  let i128_of_i64 x =
-      if Int64.(compare x zero >= 0)
-      then i128_of_u64 x
-      else C.{ i128_high = -1L; i128_low = x }
-  ;;
+  let i128_of_i64 x = C.{ i128_high = Int64.shift_right x 63; i128_low = x }
 
   let i128_of_i32 x = i128_of_i64 (Int64.of_int32 x)
 
-  let i128_to_i64_unchecked C.{ i128_high; i128_low } =
-      if Int64.equal i128_high 0L
-      then i128_low
-      else if Int64.equal i128_high (-1L)
-      then i128_low
-      else assert false
-  ;;
+  let i128_to_i64_unchecked C.{ i128_high = _; i128_low } = i128_low
 
   let i128_to_i32_unchecked x = Int64.to_int32 (i128_to_i64_unchecked x)
 end
@@ -263,6 +259,7 @@ module type Basic = sig
   val of_int : int -> t option
   val of_string : string -> t option
   val of_value : value -> t option
+  val to_int : t -> int option
 end
 [@@ocamlformat "module-item-spacing = compact"]
 
@@ -305,6 +302,8 @@ struct
       then None
       else Some (of_int_unchecked x)
   ;;
+
+  let to_int x = Some (unwrap x)
 
   let of_string s =
       let base, s = determine_base s in
@@ -442,6 +441,8 @@ module U32_basic : Basic with type t = u32 = struct
       else Some (of_int_unchecked x)
   ;;
 
+  let to_int x = Int32.unsigned_to_int (unwrap x)
+
   let of_string s =
       let base, s = determine_base s in
       try Some (wrap (C.u32_scan_exn s base)) with
@@ -521,6 +522,7 @@ module U64_basic : Basic with type t = u64 = struct
   let bit_and = wrap_op2 Int64.logand
   let bit_xor = wrap_op2 Int64.logxor
   let of_int x = if Int.compare x 0 < 0 then None else Some (of_int_unchecked x)
+  let to_int x = Int64.unsigned_to_int (unwrap x)
 
   let of_string s =
       let base, s = determine_base s in
@@ -593,6 +595,11 @@ module U128_basic : Basic with type t = u128 = struct
   let bit_and = wrap_op2 C.u128_bit_and
   let bit_xor = wrap_op2 C.u128_bit_xor
   let of_int x = if Int.compare x 0 < 0 then None else Some (of_int_unchecked x)
+
+  let to_int x =
+      let C.{ u128_high; u128_low } = unwrap x in
+      if Int64.equal u128_high 0L then Int64.unsigned_to_int u128_low else None
+  ;;
 
   let of_string s =
       let base, s = determine_base s in
@@ -710,6 +717,8 @@ module I32_basic : Basic with type t = i32 = struct
       else Some (of_int_unchecked x)
   ;;
 
+  let to_int x = i64_to_int (Int64.of_int32 (unwrap x))
+
   let of_string s =
       let base, s = determine_base s in
       try Some (wrap (C.i32_scan_exn s base)) with
@@ -784,6 +793,7 @@ module I64_basic : Basic with type t = i64 = struct
   let bit_and = wrap_op2 Int64.logand
   let bit_xor = wrap_op2 Int64.logxor
   let of_int x = Some (of_int_unchecked x)
+  let to_int x = i64_to_int (unwrap x)
 
   let of_string s =
       let base, s = determine_base s in
@@ -852,6 +862,13 @@ module I128_basic : Basic with type t = i128 = struct
   let bit_and = wrap_op2 C.i128_bit_and
   let bit_xor = wrap_op2 C.i128_bit_xor
   let of_int x = Some (of_int_unchecked x)
+
+  let to_int x =
+      let C.{ i128_high; i128_low } = unwrap x in
+      if Int64.equal i128_high (Int64.shift_right i128_low 63)
+      then i64_to_int i128_low
+      else None
+  ;;
 
   let of_string s =
       let base, s = determine_base s in
@@ -940,6 +957,8 @@ module type S = sig
   val rem_exn : t -> t -> t
   val shift_left_exn : t -> t -> t
   val shift_right_exn : t -> t -> t
+  val to_int : t -> int option
+  val to_int_exn : t -> int
   val to_string : t -> string
   val of_value : value -> t option
   val of_value_exn : value -> t
@@ -1083,6 +1102,12 @@ module Make (S : Basic) : S with type t = S.t = struct
       , check rem
       , check shift_left
       , check shift_right )
+  ;;
+
+  let to_int_exn x =
+      match to_int x with
+      | Some n -> n
+      | None -> raise Out_of_range
   ;;
 
   let of_value_exn x =
