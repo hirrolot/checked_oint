@@ -218,7 +218,7 @@ let perform_ops () =
           check_bool "Less than" S.(compare (of_int_exn 15) (of_int_exn 20) < 0, true);
           check_bool
             "Equal (compare)"
-            S.(compare (of_int_exn 15) (of_int_exn 15) = 0, true)
+            (Int.equal S.(compare (of_int_exn 15) (of_int_exn 15)) 0, true)
       in
       let check_min_max () =
           check "Minimum" S.(min (of_int_exn 10) (of_int_exn 15), of_int_exn 10);
@@ -356,10 +356,15 @@ let value_conversion () =
         check "Good" (S.of_int_exn 0);
         check "Good" (S.of_int_exn 42);
         if S.is_signed && D.is_signed then check "Good" (S.of_int_exn (-42));
-        if S.bits > D.bits || (S.bits = D.bits && (not S.is_signed) && D.is_signed)
+        if
+          Int.compare S.bits D.bits > 0
+          || (Int.equal S.bits D.bits && (not S.is_signed) && D.is_signed)
         then check_raises "Positive overflow" S.max_int
         else check "Good" S.max_int;
-        if S.is_signed && (S.bits > D.bits || (S.bits <= D.bits && not D.is_signed))
+        if
+          S.is_signed
+          && (Int.compare S.bits D.bits > 0
+              || (Int.compare S.bits D.bits <= 0 && not D.is_signed))
         then check_raises "Negative overflow" S.min_int
         else check "Good" S.min_int;
         ()))

@@ -85,15 +85,17 @@ include struct
   let i128_of_u32 x = i128_of_u64 (u64_of_u32 x)
 
   let i128_of_i64 x =
-      if x >= 0L then i128_of_u64 x else C.{ i128_high = -1L; i128_low = x }
+      if Int64.(compare x zero >= 0)
+      then i128_of_u64 x
+      else C.{ i128_high = -1L; i128_low = x }
   ;;
 
   let i128_of_i32 x = i128_of_i64 (Int64.of_int32 x)
 
   let i128_to_i64_unchecked C.{ i128_high; i128_low } =
-      if i128_high = 0L
+      if Int64.equal i128_high 0L
       then i128_low
-      else if i128_high = -1L
+      else if Int64.equal i128_high (-1L)
       then i128_low
       else failwith "Impossible"
   ;;
@@ -116,11 +118,11 @@ let wrap_op2 f x y = wrap (f (unwrap x) (unwrap y))
 
 let wrap_to_string f x = f (unwrap x)
 
-let equal_int_wrapper x y = unwrap x = unwrap y
+let equal_int_wrapper x y = Int.equal (unwrap x) (unwrap y)
 
 let pp_int_wrapper fmt x = Format.pp_print_string fmt (string_of_int (unwrap x))
 
-let compare_int_wrapper x y = compare (unwrap x) (unwrap y)
+let compare_int_wrapper x y = Int.compare (unwrap x) (unwrap y)
 
 type int_wrapper = int wrapper
 
@@ -300,7 +302,7 @@ struct
   let bit_xor = wrap_op2 ( lxor )
 
   let of_int x =
-      if x < unwrap S.min_int || x > unwrap S.max_int
+      if Int.compare x (unwrap S.min_int) < 0 || Int.compare x (unwrap S.max_int) > 0
       then None
       else Some (of_int_unchecked x)
   ;;
@@ -309,14 +311,18 @@ struct
       let base, s = determine_base s in
       match C.int_scan_exn s base with
       | exception Failure _s -> None
-      | n when n < unwrap S.min_int || n > unwrap S.max_int -> None
+      | n
+        when Int.compare n (unwrap S.min_int) < 0 || Int.compare n (unwrap S.max_int) > 0
+        -> None
       | n -> Some (wrap n)
   ;;
 
   let of_value : value -> int_wrapper option =
       let min_value, max_value = unwrap S.min_int, unwrap S.max_int in
       let of_small_int x =
-          if x >= min_value && x <= max_value then Some (wrap x) else None
+          if Int.compare x min_value >= 0 && Int.compare x max_value <= 0
+          then Some (wrap x)
+          else None
       in
       function
       | Value (Int_ty.U8, (_f, x)) -> of_small_int x
@@ -335,12 +341,12 @@ struct
         else None
       | Value (Int_ty.I32, (_f, x)) ->
         let open Int32 in
-        if x >= of_int min_value && x <= of_int max_value
+        if compare x (of_int min_value) >= 0 && compare x (of_int max_value) <= 0
         then Some (wrap (to_int x))
         else None
       | Value (Int_ty.I64, (_f, x)) ->
         let open Int64 in
-        if x >= of_int min_value && x <= of_int max_value
+        if compare x (of_int min_value) >= 0 && compare x (of_int max_value) <= 0
         then Some (wrap (to_int x))
         else None
       | Value (Int_ty.U128, (_f, x)) ->
@@ -418,7 +424,7 @@ module U32_basic : Basic with type t = u32 = struct
   let bit_xor = wrap_op2 Int32.logxor
 
   let of_int x =
-      if x < 0 || Int64.(of_int x > pred (shift_left 1L 32))
+      if Int.compare x 0 < 0 || Int64.(compare (of_int x) (pred (shift_left 1L 32)) > 0)
       then None
       else Some (of_int_unchecked x)
   ;;
@@ -432,7 +438,9 @@ module U32_basic : Basic with type t = u32 = struct
   let of_value =
       let max_u32_as_i64 = 0xFFFFFFFFL in
       let of_small_int x = Some (wrap (Int32.of_int x)) in
-      let of_small_signed_int x = if x >= 0 then Some (wrap (Int32.of_int x)) else None in
+      let of_small_signed_int x =
+          if Int.compare x 0 >= 0 then Some (wrap (Int32.of_int x)) else None
+      in
       function
       | Value (Int_ty.U8, (_f, x)) -> of_small_int x
       | Value (Int_ty.U16, (_f, x)) -> of_small_int x
@@ -486,7 +494,7 @@ module U64_basic : Basic with type t = u64 = struct
   let bit_or = wrap_op2 Int64.logor
   let bit_and = wrap_op2 Int64.logand
   let bit_xor = wrap_op2 Int64.logxor
-  let of_int x = if x < 0 then None else Some (of_int_unchecked x)
+  let of_int x = if Int.compare x 0 < 0 then None else Some (of_int_unchecked x)
 
   let of_string s =
       let base, s = determine_base s in
@@ -497,7 +505,9 @@ module U64_basic : Basic with type t = u64 = struct
   let of_value =
       let max_u64_as_i64 = Int64.minus_one in
       let of_small_int x = Some (wrap (Int64.of_int x)) in
-      let of_small_signed_int x = if x >= 0 then Some (wrap (Int64.of_int x)) else None in
+      let of_small_signed_int x =
+          if Int.compare x 0 >= 0 then Some (wrap (Int64.of_int x)) else None
+      in
       function
       | Value (Int_ty.U8, (_f, x)) -> of_small_int x
       | Value (Int_ty.U16, (_f, x)) -> of_small_int x
@@ -542,7 +552,7 @@ module U128_basic : Basic with type t = u128 = struct
   let bit_or = wrap_op2 C.u128_bit_or
   let bit_and = wrap_op2 C.u128_bit_and
   let bit_xor = wrap_op2 C.u128_bit_xor
-  let of_int x = if x < 0 then None else Some (of_int_unchecked x)
+  let of_int x = if Int.compare x 0 < 0 then None else Some (of_int_unchecked x)
 
   let of_string s =
       let base, s = determine_base s in
@@ -553,7 +563,9 @@ module U128_basic : Basic with type t = u128 = struct
   let of_value =
       let of_small_int x = Some (wrap (u128_of_u64 (Int64.of_int x))) in
       let of_small_signed_int x =
-          if x >= 0 then Some (wrap (u128_of_u64 (Int64.of_int x))) else None
+          if Int.compare x 0 >= 0
+          then Some (wrap (u128_of_u64 (Int64.of_int x)))
+          else None
       in
       function
       | Value (Int_ty.U8, (_f, x)) -> of_small_int x
@@ -635,7 +647,10 @@ module I32_basic : Basic with type t = i32 = struct
       let min_int_as_int64, max_int_as_int64 =
           Int64.of_int32 (unwrap min_int), Int64.of_int32 (unwrap max_int)
       in
-      if Int64.of_int x < min_int_as_int64 || Int64.of_int x > max_int_as_int64
+      if
+        Int64.(
+          compare (of_int x) min_int_as_int64 < 0
+          || compare (of_int x) max_int_as_int64 > 0)
       then None
       else Some (of_int_unchecked x)
   ;;
@@ -851,7 +866,7 @@ module Make (S : Basic) : S with type t = S.t = struct
   let neg x =
       if equal x min_int && is_signed
       then overflow
-      else if compare x zero != 0 && not is_signed
+      else if (not (equal x zero)) && not is_signed
       then underflow
       else Some (sub_unchecked zero x)
   ;;
