@@ -2,7 +2,11 @@
 
     This library supports signed and unsigned integers of bitnesses 8, 16, 32, 64, and
     128. {!S} is the main signature that contains common operations for all integer types;
-    specific implementations are named {!module-U8}, {!module-U16}, and so on. *)
+    specific implementations are named {!module-U8}, {!module-U16}, and so on.
+    
+    Polymorphic comparison operators raise [Invalid_argument] by default; use {!S.equal}
+    and {!S.compare} instead. This behaviour is controlled by the [checked_oint.guard]
+    virtual library; see the README. *)
 
 (** The exception raised on underflows/overflows. *)
 exception Out_of_range
@@ -83,11 +87,7 @@ module type S = sig
 
       The bitwise operations {!bit_not}, {!bit_or}, {!bit_and}, {!bit_xor}, {!shift_left},
       and {!shift_right} assume that signed integers are represented in the two's
-      complement notation.
-
-      NOTE: polymorphic comparisons raise [Invalid_argument] by default; use {!equal} and
-      {!compare} instead. This behaviour is controlled by the [checked_oint.guard]
-      virtual library. *)
+      complement notation. *)
   type t [@@deriving eq, show, ord]
 
   (** The type representation. *)
