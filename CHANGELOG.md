@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## unreleased
 
+### Added
+
+ - The `checked_oint.guard` virtual library for controlling the behaviour of polymorphic comparison, with two implementations:
+   - `checked_oint.guard-on`: polymorphic comparisons raise `Invalid_argument`, at the cost of pairing every integer with a guard value. The default.
+   - `checked_oint.guard-off`: polymorphic comparisons silently succeed, but the representation is zero-cost.
+
 ## 2.0.1 - 2026-06-11
 
 ### Fixed

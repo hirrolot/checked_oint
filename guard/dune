@@ -1,0 +1,5 @@
+(library
+ (name checked_oint_guard)
+ (public_name checked_oint.guard)
+ (virtual_modules checked_oint_guard)
+ (default_implementation checked_oint.guard-on))

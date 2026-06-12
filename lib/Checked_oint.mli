@@ -85,8 +85,9 @@ module type S = sig
       and {!shift_right} assume that signed integers are represented in the two's
       complement notation.
 
-      NOTE: implementations may not support polymorphic comparison operators. Use {!equal}
-      and {!compare} instead. *)
+      NOTE: polymorphic comparisons raise [Invalid_argument] by default; use {!equal} and
+      {!compare} instead. This behaviour is controlled by the [checked_oint.guard]
+      virtual library. *)
   type t [@@deriving eq, show, ord]
 
   (** The type representation. *)

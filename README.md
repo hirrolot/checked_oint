@@ -1,6 +1,6 @@
 # `checked_oint`
 
-`checked_oint` is an OCaml library for checked integer arithmetic. We support the full set of signed and unsigned integers of bitnesses 8, 16, 32, 64, and 128. For situations when the exact types of integers are unknown at compile-time, we provide a proper escape hatch based on existential types.
+`checked_oint` is an OCaml library for checked integer arithmetic. We support the full set of signed and unsigned integers of bitnesses 8, 16, 32, 64, and 128. In some applications, the exact types of integers may be unknown at compile-time; we thus also provide a proper escape hatch based on existential types.
 
 ## Installation
 
@@ -21,6 +21,22 @@ let () =
 ```
 
 You can find the API documentation [here](https://hirrolot.github.io/checked_oint/checked_oint/Checked_oint/index.html).
+
+## Polymorphic comparison
+
+Polymorphic comparison operators (`Stdlib.( = )`, `Stdlib.compare`, etc.) can compute wrong results on checked integers, because they compare internal representations instead of the semantic values. To protect against accidental misuse, every integer carries a special "guard" value that makes polymorphic comparisons raise `Invalid_argument`. We recommend always using the monomorphic operations such as `S.equal` and `S.compare`, because they are both safe and fast.
+
+The guard costs one allocation of a pair and a guard value per integer. To avoid this overhead, link your project against the `checked_oint.guard-off` library:
+
+```
+(executable
+ ; ...
+ (libraries checked_oint checked_oint.guard-off))
+```
+
+Libraries should only depend on `checked_oint`, leaving the choice of the guard implementation to final executables.
+
+With this guard off, integers are represented with zero overhead, but polymorphic comparison operators silently succeed, possibly returning meaningless results.
 
 ## Implementation
 

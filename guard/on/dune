@@ -1,0 +1,4 @@
+(library
+ (name checked_oint_guard_on)
+ (public_name checked_oint.guard-on)
+ (implements checked_oint.guard))

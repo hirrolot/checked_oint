@@ -1,3 +1,22 @@
 (test
  (name test_checked_oint)
+ (modules test_checked_oint)
  (libraries checked_oint alcotest))
+
+(rule
+ (copy test_checked_oint.ml checked_oint_guard_off.ml))
+
+(test
+ (name checked_oint_guard_off)
+ (modules checked_oint_guard_off)
+ (libraries checked_oint checked_oint.guard-off alcotest))
+
+(test
+ (name test_guard_on)
+ (modules test_guard_on)
+ (libraries checked_oint checked_oint.guard-on alcotest))
+
+(test
+ (name test_guard_off)
+ (modules test_guard_off)
+ (libraries checked_oint checked_oint.guard-off alcotest))

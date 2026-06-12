@@ -105,12 +105,11 @@ end
 
 exception Out_of_range
 
-(* Polymorphic comparison operators will raise an exception on [unit -> unit]. *)
-type 'a wrapper = (unit -> unit) * 'a
+type 'a wrapper = 'a Checked_oint_guard.t
 
-let wrap x = (fun () -> ()), x
+let wrap = Checked_oint_guard.wrap
 
-let unwrap (_f, x) = x
+let unwrap = Checked_oint_guard.unwrap
 
 let wrap_op1 f x = wrap (f (unwrap x))
 
@@ -325,35 +324,49 @@ struct
           else None
       in
       function
-      | Value (Int_ty.U8, (_f, x)) -> of_small_int x
-      | Value (Int_ty.U16, (_f, x)) -> of_small_int x
-      | Value (Int_ty.I8, (_f, x)) -> of_small_int x
-      | Value (Int_ty.I16, (_f, x)) -> of_small_int x
-      | Value (Int_ty.U32, (_f, x)) ->
+      | Value (Int_ty.U8, w) ->
+        let x = unwrap w in
+        of_small_int x
+      | Value (Int_ty.U16, w) ->
+        let x = unwrap w in
+        of_small_int x
+      | Value (Int_ty.I8, w) ->
+        let x = unwrap w in
+        of_small_int x
+      | Value (Int_ty.I16, w) ->
+        let x = unwrap w in
+        of_small_int x
+      | Value (Int_ty.U32, w) ->
+        let x = unwrap w in
         let open Int32 in
         if unsigned_compare x (of_int max_value) <= 0
         then Some (wrap (to_int x))
         else None
-      | Value (Int_ty.U64, (_f, x)) ->
+      | Value (Int_ty.U64, w) ->
+        let x = unwrap w in
         let open Int64 in
         if unsigned_compare x (of_int max_value) <= 0
         then Some (wrap (to_int x))
         else None
-      | Value (Int_ty.I32, (_f, x)) ->
+      | Value (Int_ty.I32, w) ->
+        let x = unwrap w in
         let open Int32 in
         if compare x (of_int min_value) >= 0 && compare x (of_int max_value) <= 0
         then Some (wrap (to_int x))
         else None
-      | Value (Int_ty.I64, (_f, x)) ->
+      | Value (Int_ty.I64, w) ->
+        let x = unwrap w in
         let open Int64 in
         if compare x (of_int min_value) >= 0 && compare x (of_int max_value) <= 0
         then Some (wrap (to_int x))
         else None
-      | Value (Int_ty.U128, (_f, x)) ->
+      | Value (Int_ty.U128, w) ->
+        let x = unwrap w in
         if C.u128_compare x (u128_of_u64 (Int64.of_int max_value)) <= 0
         then Some (wrap (Int64.to_int x.u128_low))
         else None
-      | Value (Int_ty.I128, (_f, x)) ->
+      | Value (Int_ty.I128, w) ->
+        let x = unwrap w in
         if
           C.i128_compare x (i128_of_i64 (Int64.of_int min_value)) >= 0
           && C.i128_compare x (i128_of_i64 (Int64.of_int max_value)) <= 0
@@ -442,26 +455,39 @@ module U32_basic : Basic with type t = u32 = struct
           if Int.compare x 0 >= 0 then Some (wrap (Int32.of_int x)) else None
       in
       function
-      | Value (Int_ty.U8, (_f, x)) -> of_small_int x
-      | Value (Int_ty.U16, (_f, x)) -> of_small_int x
+      | Value (Int_ty.U8, w) ->
+        let x = unwrap w in
+        of_small_int x
+      | Value (Int_ty.U16, w) ->
+        let x = unwrap w in
+        of_small_int x
       | Value (Int_ty.U32, x) -> Some x
-      | Value (Int_ty.U64, (_f, x)) ->
+      | Value (Int_ty.U64, w) ->
+        let x = unwrap w in
         if Int64.unsigned_compare x max_u32_as_i64 <= 0
         then Some (wrap (Int64.to_int32 x))
         else None
-      | Value (Int_ty.U128, (_f, x)) ->
+      | Value (Int_ty.U128, w) ->
+        let x = unwrap w in
         if C.u128_compare x (u128_of_u64 max_u32_as_i64) <= 0
         then Some (wrap (Int64.to_int32 x.u128_low))
         else None
-      | Value (Int_ty.I8, (_f, x)) -> of_small_signed_int x
-      | Value (Int_ty.I16, (_f, x)) -> of_small_signed_int x
-      | Value (Int_ty.I32, (_f, x)) ->
+      | Value (Int_ty.I8, w) ->
+        let x = unwrap w in
+        of_small_signed_int x
+      | Value (Int_ty.I16, w) ->
+        let x = unwrap w in
+        of_small_signed_int x
+      | Value (Int_ty.I32, w) ->
+        let x = unwrap w in
         if Int32.(compare x zero >= 0) then Some (wrap x) else None
-      | Value (Int_ty.I64, (_f, x)) ->
+      | Value (Int_ty.I64, w) ->
+        let x = unwrap w in
         if Int64.(compare x zero >= 0 && compare x max_u32_as_i64 <= 0)
         then Some (wrap (Int64.to_int32 x))
         else None
-      | Value (Int_ty.I128, (_f, x)) ->
+      | Value (Int_ty.I128, w) ->
+        let x = unwrap w in
         if
           C.i128_compare x (i128_of_i64 0L) >= 0
           && C.i128_compare x (i128_of_i64 max_u32_as_i64) <= 0
@@ -509,21 +535,35 @@ module U64_basic : Basic with type t = u64 = struct
           if Int.compare x 0 >= 0 then Some (wrap (Int64.of_int x)) else None
       in
       function
-      | Value (Int_ty.U8, (_f, x)) -> of_small_int x
-      | Value (Int_ty.U16, (_f, x)) -> of_small_int x
-      | Value (Int_ty.U32, (_f, x)) -> Some (wrap (u64_of_u32 x))
+      | Value (Int_ty.U8, w) ->
+        let x = unwrap w in
+        of_small_int x
+      | Value (Int_ty.U16, w) ->
+        let x = unwrap w in
+        of_small_int x
+      | Value (Int_ty.U32, w) ->
+        let x = unwrap w in
+        Some (wrap (u64_of_u32 x))
       | Value (Int_ty.U64, x) -> Some x
-      | Value (Int_ty.U128, (_f, x)) ->
+      | Value (Int_ty.U128, w) ->
+        let x = unwrap w in
         if C.u128_compare x (u128_of_u64 max_u64_as_i64) <= 0
         then Some (wrap x.u128_low)
         else None
-      | Value (Int_ty.I8, (_f, x)) -> of_small_signed_int x
-      | Value (Int_ty.I16, (_f, x)) -> of_small_signed_int x
-      | Value (Int_ty.I32, (_f, x)) ->
+      | Value (Int_ty.I8, w) ->
+        let x = unwrap w in
+        of_small_signed_int x
+      | Value (Int_ty.I16, w) ->
+        let x = unwrap w in
+        of_small_signed_int x
+      | Value (Int_ty.I32, w) ->
+        let x = unwrap w in
         if Int32.(compare x zero >= 0) then Some (wrap (Int64.of_int32 x)) else None
-      | Value (Int_ty.I64, (_f, x)) ->
+      | Value (Int_ty.I64, w) ->
+        let x = unwrap w in
         if Int64.(compare x zero >= 0) then Some (wrap x) else None
-      | Value (Int_ty.I128, (_f, x)) ->
+      | Value (Int_ty.I128, w) ->
+        let x = unwrap w in
         if
           C.i128_compare x (i128_of_i64 0L) >= 0
           && C.i128_compare x (i128_of_u64 max_u64_as_i64) <= 0
@@ -568,18 +608,33 @@ module U128_basic : Basic with type t = u128 = struct
           else None
       in
       function
-      | Value (Int_ty.U8, (_f, x)) -> of_small_int x
-      | Value (Int_ty.U16, (_f, x)) -> of_small_int x
-      | Value (Int_ty.U32, (_f, x)) -> Some (wrap (u128_of_u32 x))
-      | Value (Int_ty.U64, (_f, x)) -> Some (wrap (u128_of_u64 x))
+      | Value (Int_ty.U8, w) ->
+        let x = unwrap w in
+        of_small_int x
+      | Value (Int_ty.U16, w) ->
+        let x = unwrap w in
+        of_small_int x
+      | Value (Int_ty.U32, w) ->
+        let x = unwrap w in
+        Some (wrap (u128_of_u32 x))
+      | Value (Int_ty.U64, w) ->
+        let x = unwrap w in
+        Some (wrap (u128_of_u64 x))
       | Value (Int_ty.U128, x) -> Some x
-      | Value (Int_ty.I8, (_f, x)) -> of_small_signed_int x
-      | Value (Int_ty.I16, (_f, x)) -> of_small_signed_int x
-      | Value (Int_ty.I32, (_f, x)) ->
+      | Value (Int_ty.I8, w) ->
+        let x = unwrap w in
+        of_small_signed_int x
+      | Value (Int_ty.I16, w) ->
+        let x = unwrap w in
+        of_small_signed_int x
+      | Value (Int_ty.I32, w) ->
+        let x = unwrap w in
         if Int32.(compare x zero >= 0) then Some (wrap (u128_of_u32 x)) else None
-      | Value (Int_ty.I64, (_f, x)) ->
+      | Value (Int_ty.I64, w) ->
+        let x = unwrap w in
         if Int64.(compare x zero >= 0) then Some (wrap (u128_of_u64 x)) else None
-      | Value (Int_ty.I128, (_f, x)) ->
+      | Value (Int_ty.I128, w) ->
+        let x = unwrap w in
         if C.(i128_compare x (i128_of_i64 0L) >= 0)
         then Some (wrap (u128_of_i128_unchecked x))
         else None
@@ -667,26 +722,39 @@ module I32_basic : Basic with type t = i32 = struct
       in
       let of_small_int x = Some (wrap (Int32.of_int x)) in
       function
-      | Value (Int_ty.U8, (_f, x)) -> of_small_int x
-      | Value (Int_ty.U16, (_f, x)) -> of_small_int x
-      | Value (Int_ty.I8, (_f, x)) -> of_small_int x
-      | Value (Int_ty.I16, (_f, x)) -> of_small_int x
-      | Value (Int_ty.U32, (_f, x)) ->
+      | Value (Int_ty.U8, w) ->
+        let x = unwrap w in
+        of_small_int x
+      | Value (Int_ty.U16, w) ->
+        let x = unwrap w in
+        of_small_int x
+      | Value (Int_ty.I8, w) ->
+        let x = unwrap w in
+        of_small_int x
+      | Value (Int_ty.I16, w) ->
+        let x = unwrap w in
+        of_small_int x
+      | Value (Int_ty.U32, w) ->
+        let x = unwrap w in
         if Int32.(unsigned_compare x max_int <= 0) then Some (wrap x) else None
-      | Value (Int_ty.U64, (_f, x)) ->
+      | Value (Int_ty.U64, w) ->
+        let x = unwrap w in
         if Int64.unsigned_compare x max_i32_as_i64 <= 0
         then Some (wrap (Int64.to_int32 x))
         else None
-      | Value (Int_ty.U128, (_f, x)) ->
+      | Value (Int_ty.U128, w) ->
+        let x = unwrap w in
         if C.u128_compare x (u128_of_u64 max_i32_as_i64) <= 0
         then Some (wrap (Int64.to_int32 x.u128_low))
         else None
       | Value (Int_ty.I32, x) -> Some x
-      | Value (Int_ty.I64, (_f, x)) ->
+      | Value (Int_ty.I64, w) ->
+        let x = unwrap w in
         if Int64.(compare x min_i32_as_i64 >= 0 && compare x max_i32_as_i64 <= 0)
         then Some (wrap (Int64.to_int32 x))
         else None
-      | Value (Int_ty.I128, (_f, x)) ->
+      | Value (Int_ty.I128, w) ->
+        let x = unwrap w in
         if
           C.i128_compare x (i128_of_i64 min_i32_as_i64) >= 0
           && C.i128_compare x (i128_of_i64 max_i32_as_i64) <= 0
@@ -726,20 +794,35 @@ module I64_basic : Basic with type t = i64 = struct
   let of_value =
       let of_small_int x = Some (wrap (Int64.of_int x)) in
       function
-      | Value (Int_ty.U8, (_f, x)) -> of_small_int x
-      | Value (Int_ty.U16, (_f, x)) -> of_small_int x
-      | Value (Int_ty.I8, (_f, x)) -> of_small_int x
-      | Value (Int_ty.I16, (_f, x)) -> of_small_int x
-      | Value (Int_ty.U32, (_f, x)) -> Some (wrap (u64_of_u32 x))
-      | Value (Int_ty.I32, (_f, x)) -> Some (wrap (Int64.of_int32 x))
-      | Value (Int_ty.U64, (_f, x)) ->
+      | Value (Int_ty.U8, w) ->
+        let x = unwrap w in
+        of_small_int x
+      | Value (Int_ty.U16, w) ->
+        let x = unwrap w in
+        of_small_int x
+      | Value (Int_ty.I8, w) ->
+        let x = unwrap w in
+        of_small_int x
+      | Value (Int_ty.I16, w) ->
+        let x = unwrap w in
+        of_small_int x
+      | Value (Int_ty.U32, w) ->
+        let x = unwrap w in
+        Some (wrap (u64_of_u32 x))
+      | Value (Int_ty.I32, w) ->
+        let x = unwrap w in
+        Some (wrap (Int64.of_int32 x))
+      | Value (Int_ty.U64, w) ->
+        let x = unwrap w in
         if Int64.(unsigned_compare x max_int <= 0) then Some (wrap x) else None
-      | Value (Int_ty.U128, (_f, x)) ->
+      | Value (Int_ty.U128, w) ->
+        let x = unwrap w in
         if C.u128_compare x (u128_of_u64 Int64.max_int) <= 0
         then Some (wrap x.u128_low)
         else None
       | Value (Int_ty.I64, x) -> Some x
-      | Value (Int_ty.I128, (_f, x)) ->
+      | Value (Int_ty.I128, w) ->
+        let x = unwrap w in
         if
           C.i128_compare x (i128_of_i64 Int64.min_int) >= 0
           && C.i128_compare x (i128_of_i64 Int64.max_int) <= 0
@@ -780,18 +863,35 @@ module I128_basic : Basic with type t = i128 = struct
       let max_i128_as_u128 = u128_of_i128_unchecked (C.i128_max ()) in
       let of_small_int x = Some (wrap (i128_of_i64 (Int64.of_int x))) in
       function
-      | Value (Int_ty.U8, (_f, x)) -> of_small_int x
-      | Value (Int_ty.U16, (_f, x)) -> of_small_int x
-      | Value (Int_ty.I8, (_f, x)) -> of_small_int x
-      | Value (Int_ty.I16, (_f, x)) -> of_small_int x
-      | Value (Int_ty.U32, (_f, x)) -> Some (wrap (i128_of_u32 x))
-      | Value (Int_ty.U64, (_f, x)) -> Some (wrap (i128_of_u64 x))
-      | Value (Int_ty.U128, (_f, x)) ->
+      | Value (Int_ty.U8, w) ->
+        let x = unwrap w in
+        of_small_int x
+      | Value (Int_ty.U16, w) ->
+        let x = unwrap w in
+        of_small_int x
+      | Value (Int_ty.I8, w) ->
+        let x = unwrap w in
+        of_small_int x
+      | Value (Int_ty.I16, w) ->
+        let x = unwrap w in
+        of_small_int x
+      | Value (Int_ty.U32, w) ->
+        let x = unwrap w in
+        Some (wrap (i128_of_u32 x))
+      | Value (Int_ty.U64, w) ->
+        let x = unwrap w in
+        Some (wrap (i128_of_u64 x))
+      | Value (Int_ty.U128, w) ->
+        let x = unwrap w in
         if C.u128_compare x max_i128_as_u128 <= 0
         then Some (wrap (i128_of_u128_unchecked x))
         else None
-      | Value (Int_ty.I32, (_f, x)) -> Some (wrap (i128_of_i32 x))
-      | Value (Int_ty.I64, (_f, x)) -> Some (wrap (i128_of_i64 x))
+      | Value (Int_ty.I32, w) ->
+        let x = unwrap w in
+        Some (wrap (i128_of_i32 x))
+      | Value (Int_ty.I64, w) ->
+        let x = unwrap w in
+        Some (wrap (i128_of_i64 x))
       | Value (Int_ty.I128, x) -> Some x
   ;;
 end
