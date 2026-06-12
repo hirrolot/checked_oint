@@ -97,7 +97,7 @@ include struct
       then i128_low
       else if Int64.equal i128_high (-1L)
       then i128_low
-      else failwith "Impossible"
+      else assert false
   ;;
 
   let i128_to_i32_unchecked x = Int64.to_int32 (i128_to_i64_unchecked x)
